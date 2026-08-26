@@ -1,0 +1,66 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE and editor files
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Logs and runtime files
+*.log
+logs/
+*.pid
+*.pid.lock
+
+# Node.js / Web / CLI dependencies and build output
+node_modules/
+dist/
+dist-ssr/
+coverage/
+.nyc_output/
+.eslintcache
+.parcel-cache/
+.next/
+.nuxt/
+.output/
+storybook-static/
+.turbo/
+.cache/
+.vite/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Java / JVM build output and tooling
+target/
+out/
+build/
+.gradle/
+*.class
+.flattened-pom.xml
+.factorypath
+.apt_generated/
+.springBeans
+.sts4-cache/
+.gradletasknamecache
+hs_err_pid*
+replay_pid*
+
+# Local database/runtime files
+services/api/data/
+*.mv.db
+*.lock.db
+*.trace.db
