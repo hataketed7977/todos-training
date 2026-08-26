@@ -55,15 +55,15 @@ test('root and command help do not call the API', async () => {
   const output: string[] = []
   program.configureOutput({ writeOut: (value) => output.push(value) })
 
-  await runCli(program, ['node', 'todo-cli', '--help'], () => undefined)
+  await runCli(program, ['node', 'todos-cli', '--help'], () => undefined)
   assert.equal(calls, 0)
-  assert.match(output.join(''), /Usage: todo-cli/)
+  assert.match(output.join(''), /Usage: todos-cli/)
   assert.match(output.join(''), /Examples:/)
 
   const addProgram = createProgram(app)
   const addOutput: string[] = []
   addProgram.configureOutput({ writeOut: (value) => addOutput.push(value) })
-  await runCli(addProgram, ['node', 'todo-cli', 'add', '--help'], () => undefined)
+  await runCli(addProgram, ['node', 'todos-cli', 'add', '--help'], () => undefined)
   assert.equal(calls, 0)
   assert.match(addOutput.join(''), /todo title/)
 })

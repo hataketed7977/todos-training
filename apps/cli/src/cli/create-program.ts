@@ -7,7 +7,7 @@ export function createProgram(app: TodoUseCases, version = '0.0.0'): Command {
   const program = new Command()
 
   program
-    .name('todo-cli')
+    .name('todos-cli')
     .description('Manage todos through the training API')
     .version(version)
     .showHelpAfterError()
@@ -15,7 +15,7 @@ export function createProgram(app: TodoUseCases, version = '0.0.0'): Command {
       sortSubcommands: true,
       sortOptions: true,
     })
-    .addHelpText('after', '\nExamples:\n  $ todo-cli list\n  $ todo-cli add "Prepare training"\n')
+    .addHelpText('after', '\nExamples:\n  $ todos-cli list\n  $ todos-cli add "Prepare training"\n')
 
   registerListCommand(program, app)
   registerAddCommand(program, app)

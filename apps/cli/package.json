@@ -1,5 +1,5 @@
 {
-  "name": "@bytedance/todo-cli",
+  "name": "todos-training-cli",
   "version": "0.0.0",
   "description": "Command-line client for the Todos API",
   "type": "module",
@@ -8,17 +8,13 @@
     "!dist/test"
   ],
   "bin": {
-    "todo-cli": "./dist/index.js"
+    "todos-cli": "./dist/index.js"
   },
   "scripts": {
-    "clean": "rimraf dist",
-    "build": "pnpm clean && tsc -p tsconfig.json",
+    "build": "rimraf dist && tsc -p tsconfig.json",
+    "build:install": "pnpm build && npm install --global .",
     "test": "pnpm build && node --test dist/test/cli.test.js",
-    "prepublishOnly": "pnpm test",
-    "pack:check": "pnpm test && npm pack --dry-run",
-    "install:global": "pnpm build && npm install --global .",
-    "todo-cli": "pnpm build && node dist/index.js",
-    "start": "node dist/index.js"
+    "pack": "pnpm test && npm pack --dry-run"
   },
   "dependencies": {
     "commander": "^14.0.1"
