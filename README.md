@@ -1,53 +1,67 @@
 # Todos Training
 
-Workshop Demo for a small Todo Kanban system.
+用于小型 Todo Kanban 系统的 Workshop Demo。
 
-This repository contains three independent applications in one Git repository:
+这个仓库在一个 Git repository 中包含三个独立应用：
 
 - `apps/web`: React + Vite + Semi Design web client
 - `apps/cli`: Node.js command-line client
 - `services/api`: Java 21 + Spring Boot 3 API service
 
-This is a monorepo, but it is not a pnpm workspace. Each application owns its
-own dependencies, lockfile, build command, and release path.
+这是一个 monorepo，但不是 pnpm workspace。每个应用都拥有自己的依赖清单、
+lockfile、build command 和 release path。
 
-## Prerequisites
+## 前置条件
 
 - Java 21+
 - Node.js 20+
 - pnpm
 
-## Quick Start
+## 快速开始
 
-Start the API and Web together:
+同时启动 API 和 Web：
 
 ```bash
 ./scripts/dev.sh
 ```
 
-Open:
+打开：
 
 - Web: `http://localhost:15173`
-- API: `http://localhost:18080`
 
-Run the launcher in the background:
+以后台模式运行 launcher：
 
 ```bash
 ./scripts/dev.sh --detach
 ```
 
-Logs and PID files are written to `/tmp/todos-training/`.
+launcher 默认使用 API port `18080` 和 Web port `15173`。需要时可以覆盖
+Web port；launcher 会把匹配的 origin 传给 API，确保 CORS 保持一致：
 
-## Run Separately
+```bash
+WEB_PORT=15174 ./scripts/dev.sh
+```
 
-Start the API service:
+如果需要干净的 workshop 状态，可以在启动前重置本地 H2 数据：
+
+```bash
+./scripts/dev.sh --reset
+```
+
+不使用 `--reset` 时，基于文件的 H2 database 会在服务重启后继续保留。
+
+日志和 PID 文件会写入 `/tmp/todos-training/`。
+
+## 分别运行
+
+启动 API service：
 
 ```bash
 cd services/api
 ./gradlew bootRun
 ```
 
-Start the web client:
+启动 web client：
 
 ```bash
 cd apps/web
@@ -55,7 +69,7 @@ pnpm install
 pnpm dev
 ```
 
-Use the CLI:
+使用 CLI：
 
 ```bash
 cd apps/cli
@@ -65,21 +79,21 @@ pnpm exec todos-cli list
 pnpm exec todos-cli add "Prepare training"
 ```
 
-Install the published CLI globally:
+全局安装已发布的 CLI：
 
 ```bash
 npm install --global todos-training-cli
 todos-cli --help
 ```
 
-For a local checkout, install the current CLI globally with one command:
+对于本地 checkout，可以用一条命令全局安装当前 CLI：
 
 ```bash
 cd apps/cli
 pnpm build:install
 ```
 
-Publish a new version to the public npm registry:
+向 public npm registry 发布新版本：
 
 ```bash
 cd apps/cli
@@ -88,22 +102,23 @@ pnpm pack
 pnpm publish
 ```
 
-The web and CLI both call the API at `http://localhost:18080` by default.
+Web 和 CLI 默认都会调用 `http://localhost:18080` 上的 API。API 允许
+`WEB_PORT` 选定的 Web origin；手动启动服务时，请把
+`CORS_ALLOWED_ORIGIN` 设置为 Web URL。
 
-## Local Database
+## 本地数据库
 
-The API uses H2 file storage by default. No external database is required for
-local training.
+API 默认使用 H2 file storage。本地训练不需要外部数据库。
 
-Database files are created under:
+数据库文件会创建在：
 
 ```text
 services/api/data/
 ```
 
-## Validation
+## 验证
 
-Run focused checks from the project that changed:
+在发生变更的项目内运行 focused checks：
 
 ```bash
 cd apps/web
@@ -120,17 +135,52 @@ cd services/api
 ./gradlew test
 ```
 
-## Project Shape
+## 项目形态
 
 ```text
-apps/web  ----\
-               ---> services/api ---> H2 database
-apps/cli  ----/
+apps/web     ----\
+                  ---> services/api ---> H2 database
+apps/cli     ----/
 ```
 
-There is no direct dependency between `apps/web` and `apps/cli`.
+`apps/web` 和 `apps/cli` 之间没有直接依赖。
 
-## Agent and Architecture Notes
+## Agent Skills
 
-See `AGENTS.md` for repository boundaries, product contracts, API contracts,
-implementation rules, and validation guidance for coding agents.
+本项目为三个 agent 环境提供 project-local skills：
+
+- Codex: `.agents/skills`
+- Claude Code: `.claude/skills` 和 `.claude/commands`
+- Trae: `.trae/skills` 和 `.trae/commands`
+- OpenSpec project configuration: `openspec/`
+
+clone 后请重启 agent 或 IDE，让它重新扫描 local skills 和 commands。
+
+已安装的 workflow families：
+
+- OpenSpec core workflows: propose, explore, apply, update, sync, archive。
+- `grill-me` 及其来自 `mattpocock/skills` 的必需依赖 `grilling`。
+- 一组小型可移植 Superpowers subset：`using-superpowers`、`brainstorming`、
+  `writing-plans`、`test-driven-development`、`systematic-debugging` 和
+  `verification-before-completion`。
+
+常用入口：
+
+```text
+Codex:      $openspec-propose "your idea"
+Claude:     /opsx:propose "your idea"
+Trae:       /opsx-propose "your idea"
+
+Codex:      $grill-me
+Claude:     /grill-me
+Trae:       /grill-me
+```
+
+本仓库刻意不使用 `~/.codex/prompts` 下的 Codex custom prompts。它们是
+user-local 的，在可复用 workflow 共享场景下已 deprecated，也不会通过本仓库共享。
+请改用 `$skill-name` 形式的 Codex skills。
+
+## Agent 与架构说明
+
+编码 agent 需要遵守的 repository boundaries、product contracts、API
+contracts、implementation rules 和 validation guidance，请见 `AGENTS.md`。

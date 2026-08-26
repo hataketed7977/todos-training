@@ -1,28 +1,26 @@
-# Todos Training Agents Guide
+# Todos Training Agents 指南
 
-## Purpose
+## 目的
 
-This repository is a training monorepo for a small Todo Kanban system used in
-Workshop Demo.
+这个仓库是一个 training monorepo，用于 Workshop Demo 中的小型 Todo Kanban
+系统。
 
-The repository is intentionally simple. Keep it useful for explaining how a
-full-stack project can be structured for AI-assisted development without adding
-infrastructure before it is needed.
+仓库刻意保持简单。它用于说明一个 full-stack project 如何为 AI-assisted
+development 组织结构，同时不要在真正需要之前增加基础设施。
 
-## Instruction Scope
+## 指令范围
 
-`README.md` is for human onboarding: what the project is, how to start it, and
-which focused checks to run.
+`README.md` 面向人类 onboarding：说明项目是什么、如何启动，以及应该运行哪些
+focused checks。
 
-`AGENTS.md` is the LLM Wiki entrypoint for coding agents. It should contain the
-repository map, module ownership, product contracts, API contracts, validation
-matrix, and implementation rules that agents must follow before changing code.
+`AGENTS.md` 是 coding agents 的 LLM Wiki entrypoint。它应包含 repository
+map、module ownership、product contracts、API contracts、validation matrix，
+以及 agents 在改代码前必须遵守的 implementation rules。
 
-Do not create a `docs/` directory yet. This file is intentionally allowed to be
-larger than the README. Split it later only when the content becomes hard to
-navigate or starts approaching agent instruction size limits.
+暂时不要创建 `docs/` 目录。这个文件刻意允许比 README 更大。只有当内容变得难以
+导航，或开始接近 agent instruction size limits 时，才在以后拆分。
 
-## System Map
+## 系统图
 
 ```text
 apps/web  ----\
@@ -30,15 +28,24 @@ apps/web  ----\
 apps/cli  ----/
 ```
 
-`apps/web` and `apps/cli` are both API clients. They do not depend on each
-other. `services/api` owns persistence and Todo business rules.
+`apps/web` 和 `apps/cli` 都是 API clients。它们彼此不依赖。`services/api`
+拥有 persistence 和 Todo business rules。
 
-## Repository Shape
+## 仓库结构
 
 ```text
 .
 ├── AGENTS.md
 ├── README.md
+├── .agents/
+│   └── skills/
+├── .claude/
+│   ├── commands/
+│   └── skills/
+├── .trae/
+│   ├── commands/
+│   └── skills/
+├── openspec/
 ├── scripts/
 │   └── dev.sh
 ├── apps/
@@ -48,40 +55,178 @@ other. `services/api` owns persistence and Todo business rules.
     └── api/
 ```
 
-This is a monorepo, but it is not a pnpm workspace:
+这是一个 monorepo，但不是 pnpm workspace：
 
-- Do not add `pnpm-workspace.yaml` unless explicitly requested.
-- Do not add a root `package.json` unless explicitly requested.
-- Do not introduce shared packages unless explicitly requested.
-- Each app owns its own dependency manifest, lockfile, commands, and release
-  path.
+- 除非明确要求，否则不要添加 `pnpm-workspace.yaml`。
+- 除非明确要求，否则不要添加 root `package.json`。
+- 除非明确要求，否则不要引入 shared packages。
+- 每个 app 都拥有自己的依赖清单、lockfile、commands 和 release path。
 
-## Non-Goals For The Current Baseline
+## Agent Skill 基线
 
-Do not add these unless the user explicitly changes scope:
+这个仓库包含 project-local skills，让 trainees clone 项目后，可以在多个
+coding agents 中使用同一套 workflow vocabulary。
 
-- Authentication or users
-- Authorization or tenant isolation
-- Docker or Kubernetes
-- External databases such as PostgreSQL or MySQL
+目录归属：
+
+- `.agents/skills/`: Codex 和其他 Agent Skills-compatible tools。
+- `.claude/skills/`: Claude Code skills。
+- `.claude/commands/`: Claude Code slash commands。
+- `.trae/skills/`: Trae skills。
+- `.trae/commands/`: Trae slash commands。
+- `openspec/`: OpenSpec project configuration。
+
+不要为了 project-local skills 添加 `.codex/` 目录。Codex 使用 `.agents/skills`
+承载这些 reusable workflows。`~/.codex/prompts` 下的 Codex custom prompts 是
+user-local 的，在 reusable workflow sharing 场景下已 deprecated，因此本仓库不会
+install 或 commit 它们。
+
+clone 后或修改 skill files 后，请重启 agent 或 IDE，让 local skills 和 commands
+被重新扫描。
+
+### 已安装的 OpenSpec Workflows
+
+OpenSpec 已为以下工具安装：
+
+- Codex 通过 `.agents/skills/openspec-*/SKILL.md`
+- Claude Code 通过 `.claude/skills/openspec-*` 和 `.claude/commands/opsx/*`
+- Trae 通过 `.trae/skills/openspec-*` 和 `.trae/commands/opsx-*`
+
+当前 OpenSpec profile：
+
+```text
+core: propose, explore, apply, update, sync, archive
+```
+
+常用入口：
+
+```text
+Codex:  $openspec-propose "your idea"
+Claude: /opsx:propose "your idea"
+Trae:   /opsx-propose "your idea"
+```
+
+OpenSpec planning boundaries：
+
+- `propose` 只创建 planning artifacts。
+- `apply` 基于已批准的 change 执行 implementation。
+- `archive` 只用于已完成且已验证的 changes。
+- 不要把生成的 OpenSpec proposal 当作 implementation 授权。
+- 不要因为 OpenSpec artifacts 存在就跳过 validation。
+
+OpenSpec generated files 应通过 OpenSpec CLI 刷新，而不是手工编辑。如果需要
+customization，优先修改 `AGENTS.md` 或 `openspec/config.yaml` 中的 project
+guidance。
+
+### 已安装的 grill-me Skills
+
+仓库包含：
+
+- `grill-me`
+- `grilling`
+
+`grill-me` 是一个由用户调用的轻量 entrypoint，会委托给 `grilling`，因此两者
+必须一起保持安装。
+
+当 design、plan 或 architecture decision 在 implementation 前需要 adversarial
+questioning 时使用它。
+
+常用入口：
+
+```text
+Codex:  $grill-me
+Claude: /grill-me
+Trae:   /grill-me
+```
+
+### 已安装的 Superpowers Subset
+
+仓库包含来自 `obra/superpowers` 的一组小型 portable subset：
+
+- `using-superpowers`
+- `brainstorming`
+- `writing-plans`
+- `test-driven-development`
+- `systematic-debugging`
+- `verification-before-completion`
+
+这刻意只是一个 training-friendly subset，不是 Superpowers plugin distribution 的
+完整替代品。如果 trainee 需要完整的 Superpowers 体验，请为其 agent 安装官方
+plugin 或 package。本 project-local subset 的存在，是为了让核心 workflow examples
+在这个仓库内可见且可编辑。
+
+`using-superpowers` 刻意保持严格。它要求 agent 在行动前检查 relevant skills。
+如果它与直接的用户指令或本文件的 repository rules 冲突，则直接的用户指令和本文件
+优先。
+
+### Skill 更新规则
+
+Third-party skill files 视为 generated/vendor content：
+
+- 正常 project behavior 不要手工编辑 third-party `SKILL.md` files。
+- 使用 `openspec init` 或 `openspec update` 更新 OpenSpec files，并使用预期的
+  tool targets。
+- 使用 `skills` installer 更新 `mattpocock/skills` 和 `obra/superpowers` files，
+  然后在 commit 前 review diff。
+- 保持 `skills-lock.json` 与已安装的 non-OpenSpec skills 对齐。
+- 保留 `.agents/skills/.openspec-target`；它记录了 shared `.agents/skills` tree
+  的 OpenSpec ownership。
+
+推荐的 regeneration commands：从一次性目录运行，然后 review 后复制进仓库。
+
+```bash
+CODEX_HOME="$(mktemp -d)" npx -y @fission-ai/openspec@latest init \
+  --tools claude,trae,codex \
+  --profile core \
+  --no-animation
+```
+
+```bash
+npx -y skills@latest add mattpocock/skills \
+  --skill grill-me grilling \
+  --agent claude-code codex trae \
+  --copy \
+  -y
+```
+
+```bash
+npx -y skills@latest add obra/superpowers \
+  --skill using-superpowers brainstorming writing-plans test-driven-development systematic-debugging verification-before-completion \
+  --agent claude-code codex trae \
+  --copy \
+  -y
+```
+
+OpenSpec command 上的临时 `CODEX_HOME` 可以避免生成 project-local artifacts 时修改
+developer 真实的 `~/.codex`。
+
+## 当前基线的 Non-Goals
+
+除非用户明确改变 scope，否则不要添加以下内容：
+
+- Authentication 或 users
+- Authorization 或 tenant isolation
+- Docker 或 Kubernetes
+- PostgreSQL 或 MySQL 等外部数据库
 - GraphQL
 - Generated API clients
-- A root build orchestrator
-- A shared TypeScript package
-- A `docs/` directory
+- Root build orchestrator
+- Shared TypeScript package
+- `docs/` 目录
 - Drag-and-drop
 - Todo deletion
 - Status transition APIs
 - Todo priority
 - Todo description
-- Multiple boards, lanes, swimlanes, workflow definitions, or execution flows
+- Multiple boards、lanes、swimlanes、workflow definitions 或 execution flows
+- `.codex/` 或 `~/.codex/prompts` 下的 Codex custom prompts
 
-## Local Launcher
+## 本地 Launcher
 
-`scripts/dev.sh` is a convenience script for local development. It is not a
-build system and does not change module ownership boundaries.
+`scripts/dev.sh` 是用于本地开发的 convenience script。它不是 build system，也不
+改变 module ownership boundaries。
 
-Supported commands:
+支持的 commands：
 
 ```bash
 ./scripts/dev.sh
@@ -89,29 +234,32 @@ Supported commands:
 ./scripts/dev.sh --build
 ./scripts/dev.sh --skip-install
 ./scripts/dev.sh --no-takeover
+./scripts/dev.sh --reset
 ./scripts/dev.sh --help
 ```
 
-Default behavior:
+默认行为：
 
-- Checks Java 21+, Node.js 20+, pnpm, curl, and lsof.
-- Starts `services/api` on `http://localhost:18080`.
-- Starts `apps/web` on `http://localhost:15173`.
-- Stops existing listeners on those ports unless `--no-takeover` is used.
-- Installs web/cli dependencies when `node_modules` is missing or manifests
-  changed, unless `--skip-install` is used.
-- Writes logs and PID files under `/tmp/todos-training/` by default.
-- Stops only services started by the script when foreground mode receives
-  Ctrl+C.
-- Does not run or host the CLI as a long-running service.
+- 检查 Java 21+、Node.js 20+、pnpm、curl 和 lsof。
+- 在 `http://localhost:18080` 启动 `services/api`。
+- 在 `http://localhost:15173` 启动 `apps/web`。
+- 除非使用 `--no-takeover`，否则停止这些端口上已有的 listeners。
+- 把选定的 Web origin 传给 API 用于 CORS。
+- 当 `node_modules` 缺失或 manifests 发生变化时安装 web/cli dependencies，除非
+  使用 `--skip-install`。
+- 默认保留基于文件的 H2 database。`--reset` 在启动前只移除本地 `todos*`
+  database files。
+- 默认把 logs 和 PID files 写到 `/tmp/todos-training/`。
+- foreground mode 收到 Ctrl+C 时，只停止由该 script 启动的 services。
+- 不会把 CLI 作为 long-running service 运行或托管。
 
-## Module Boundaries
+## 模块边界
 
 ### apps/web
 
-Purpose: Browser-based Todo Kanban UI.
+目的：基于浏览器的 Todo Kanban UI。
 
-Technology:
+技术：
 
 - React
 - Vite
@@ -119,22 +267,22 @@ Technology:
 - Semi Design
 - pnpm
 
-Allowed:
+允许：
 
-- Call `services/api` through HTTP.
-- Own browser UI state, rendering, and user interactions.
-- Own web-specific TypeScript types when they mirror API response shapes.
-- Use local i18n constants for UI copy.
+- 通过 HTTP 调用 `services/api`。
+- 拥有 browser UI state、rendering 和 user interactions。
+- 在镜像 API response shapes 时，拥有 web-specific TypeScript types。
+- 使用本地 i18n constants 管理 UI copy。
 
-Not allowed:
+不允许：
 
-- Import code from `apps/cli`.
-- Read or write the database directly.
-- Add drag-and-drop, delete, priority, description, multiple boards, or custom
-  workflow UI unless explicitly requested.
-- Introduce a shared package without an explicit architecture change.
+- 从 `apps/cli` import code。
+- 直接读写 database。
+- 除非明确要求，否则添加 drag-and-drop、delete、priority、description、multiple
+  boards 或 custom workflow UI。
+- 在没有明确 architecture change 的情况下引入 shared package。
 
-Current source layout:
+当前 source layout：
 
 ```text
 apps/web/src/
@@ -149,56 +297,56 @@ apps/web/src/
 └── types/
 ```
 
-Directory intent:
+目录意图：
 
-- `pages/`: route-level page composition.
-- `components/`: reusable presentational or page-local UI components.
-- `hooks/`: React state/effect orchestration.
-- `services/`: HTTP calls and backend integration.
-- `types/`: TypeScript domain/API types used by the web app.
-- `i18n/`: UI text constants. Add copy here before hardcoding user-facing text.
-- `index.css`: global document-level styles only, such as base font and page
-  background.
+- `pages/`: route-level page composition。
+- `components/`: reusable presentational 或 page-local UI components。
+- `hooks/`: React state/effect orchestration。
+- `services/`: HTTP calls 和 backend integration。
+- `types/`: web app 使用的 TypeScript domain/API types。
+- `i18n/`: UI text constants。硬编码 user-facing text 前先在这里添加 copy。
+- `index.css`: 只放 global document-level styles，例如 base font 和 page
+  background。
 
-Styling rules:
+Styling 规则：
 
-- Use Semi Design components as the UI baseline.
-- Prefer Semi props and composition over custom CSS.
-- Avoid page-level component CSS files for one-off styling.
-- Inline styles are acceptable for small layout constraints and visual tuning.
-- Keep broad global styles in `index.css`; do not use it to override component
-  internals broadly.
-- Dark header areas must use light readable text.
-- Keep the board visually simple: top navigation/header only, no sidebar.
+- 使用 Semi Design components 作为 UI baseline。
+- 相比 custom CSS，优先使用 Semi props 和 composition。
+- 避免为了 one-off styling 创建 page-level component CSS files。
+- 对小范围 layout constraints 和 visual tuning，可以使用 inline styles。
+- 将宽泛的 global styles 保留在 `index.css`；不要用它大范围覆盖 component
+  internals。
+- 深色 header 区域必须使用浅色且可读的文字。
+- 保持 board 视觉简单：只有 top navigation/header，没有 sidebar。
 
-Current web behavior:
+当前 Web 行为：
 
-- Page title is `Todos-Training`.
-- Subtitle is `Workshop Demo`.
-- UI copy is Chinese except brand/title strings.
-- The board displays exactly three fixed columns:
+- Page title 是 `Todos-Training`。
+- Subtitle 是 `Workshop Demo`。
+- 除 brand/title strings 外，UI copy 使用中文。
+- board 精确显示三个固定 columns：
   - `TODO` -> `待处理`
   - `DOING` -> `进行中`
   - `DONE` -> `已完成`
-- Cards are grouped by the `status` returned by the API.
-- The add button appears only in the `待处理` column.
-- Creating a todo opens a Semi Modal.
-- The create modal contains one required title input.
-- The input has no visible label and uses placeholder `标题`.
-- Empty title or whitespace-only title must fail validation.
-- Created todos are sent to the backend through `POST /api/todos`.
-- The backend assigns new todos to `TODO`.
-- Cards display only the title.
-- There is no delete button.
-- There are no status move buttons.
-- There is no manual refresh button.
-- Board columns are fixed-height inside the viewport; long columns should scroll
-  inside the column body, not create page-level scrolling.
-- Header stats show total count and per-status counts.
-- Header status tag colors should stay visually aligned with lane tag colors,
-  while remaining readable on the dark header background.
+- Cards 按 API 返回的 `status` 分组。
+- add button 只出现在 `待处理` column。
+- 创建 todo 会打开 Semi Modal。
+- create modal 包含一个必填 title input。
+- input 没有可见 label，使用 placeholder `标题`。
+- 空 title 或仅包含空白字符的 title 必须 validation 失败。
+- 创建的 todos 通过 `POST /api/todos` 发送给 backend。
+- backend 将新 todos 分配到 `TODO`。
+- Cards 只展示 title。
+- 没有 delete button。
+- 没有 status move buttons。
+- 没有 manual refresh button。
+- Board columns 在 viewport 内固定高度；长 columns 应在 column body 内滚动，不能造成
+  page-level scrolling。
+- Header stats 显示 total count 和 per-status counts。
+- Header status tag colors 应与 lane tag colors 保持视觉一致，同时在深色 header
+  background 上保持可读。
 
-Local commands:
+本地 commands：
 
 ```bash
 cd apps/web
@@ -208,46 +356,49 @@ pnpm build
 pnpm lint
 ```
 
-Configuration:
+配置：
 
 ```bash
 VITE_API_BASE_URL=http://localhost:18080
 ```
 
-Known build tradeoff:
+launcher 启动 API 时会把 `CORS_ALLOWED_ORIGIN` 设置为
+`http://localhost:${WEB_PORT}`。手动启动 API 时，如果 Web port 不是 `15173`，请显式
+设置它。
 
-- Vite may warn that the main chunk is larger than 500 kB.
-- Current cause is the Semi component dependency graph, especially Semi Form.
-- This is acceptable for the demo baseline unless the user explicitly asks for
-  bundle optimization.
-- Do not add lazy loading or manual chunk splitting only to silence the warning
-  unless the user accepts that tradeoff.
+已知 build tradeoff：
+
+- Vite 可能警告 main chunk 大于 500 kB。
+- 当前原因是 Semi component dependency graph，尤其是 Semi Form。
+- 除非用户明确要求 bundle optimization，否则这对 demo baseline 是可接受的。
+- 除非用户接受该 tradeoff，否则不要只是为了消除 warning 而添加 lazy loading 或
+  manual chunk splitting。
 
 ### apps/cli
 
-Purpose: Command-line client for managing todos through the API.
+目的：通过 API 管理 todos 的 command-line client。
 
-Technology:
+技术：
 
 - Node.js 20+
 - TypeScript
 - Commander
 - pnpm
 
-Allowed:
+允许：
 
-- Call `services/api` through HTTP.
-- Own command parsing, terminal output, and CLI-specific application flow.
-- Own CLI-specific TypeScript types when they mirror API response shapes.
+- 通过 HTTP 调用 `services/api`。
+- 拥有 command parsing、terminal output 和 CLI-specific application flow。
+- 在镜像 API response shapes 时，拥有 CLI-specific TypeScript types。
 
-Not allowed:
+不允许：
 
-- Import code from `apps/web`.
-- Read or write the database directly.
-- Add commands that require missing backend capabilities.
-- Introduce a shared package without an explicit architecture change.
+- 从 `apps/web` import code。
+- 直接读写 database。
+- 添加依赖缺失 backend capabilities 的 commands。
+- 在没有明确 architecture change 的情况下引入 shared package。
 
-Current source layout:
+当前 source layout：
 
 ```text
 apps/cli/src/
@@ -263,28 +414,28 @@ apps/cli/src/
 └── types/
 ```
 
-Directory intent:
+目录意图：
 
-- `cli/`: Commander program creation and process-level run wiring.
-- `commands/`: command definitions and argument handling.
-- `application/`: use-case orchestration independent of Commander.
-- `application/ports/`: interfaces required by application logic.
-- `infrastructure/`: HTTP client and environment configuration.
-- `output/`: terminal formatting and printing.
-- `types/`: CLI-side API/domain types.
-- `test/`: Node test runner tests compiled before execution.
+- `cli/`: Commander program creation 和 process-level run wiring。
+- `commands/`: command definitions 和 argument handling。
+- `application/`: 独立于 Commander 的 use-case orchestration。
+- `application/ports/`: application logic 需要的 interfaces。
+- `infrastructure/`: HTTP client 和 environment configuration。
+- `output/`: terminal formatting 和 printing。
+- `types/`: CLI-side API/domain types。
+- `test/`: 执行前会被编译的 Node test runner tests。
 
-Current commands:
+当前 commands：
 
 ```bash
 todos-cli list
 todos-cli add "Prepare training"
 ```
 
-Do not add `delete`, `move`, `done`, or status-transition commands unless the
-backend API is intentionally expanded first.
+除非先有意扩展 backend API，否则不要添加 `delete`、`move`、`done` 或
+status-transition commands。
 
-Local commands:
+本地 commands：
 
 ```bash
 cd apps/cli
@@ -296,14 +447,14 @@ pnpm exec todos-cli add "Prepare training"
 node dist/index.js list
 ```
 
-Install the current CLI globally from the local checkout:
+从本地 checkout 全局安装当前 CLI：
 
 ```bash
 cd apps/cli
 pnpm build:install
 ```
 
-Configuration:
+配置：
 
 ```bash
 TODO_API_URL=http://localhost:18080
@@ -311,9 +462,9 @@ TODO_API_URL=http://localhost:18080
 
 ### services/api
 
-Purpose: Backend API and Todo business logic.
+目的：Backend API 和 Todo business logic。
 
-Technology:
+技术：
 
 - Java 21
 - Spring Boot 3
@@ -324,30 +475,30 @@ Technology:
 - Flyway
 - H2
 
-Allowed:
+允许：
 
-- Own Todo business rules.
-- Own persistence.
-- Expose REST APIs.
-- Own database migrations.
-- Return API response shapes consumed by web and CLI.
+- 拥有 Todo business rules。
+- 拥有 persistence。
+- 暴露 REST APIs。
+- 拥有 database migrations。
+- 返回 web 和 CLI 消费的 API response shapes。
 
-Not allowed:
+不允许：
 
-- Depend on `apps/web`.
-- Depend on `apps/cli`.
-- Add authentication in the first version.
-- Require an external database in the first version.
-- Let Hibernate mutate schema automatically.
-- Expose status transition or delete endpoints unless explicitly requested.
+- 依赖 `apps/web`。
+- 依赖 `apps/cli`。
+- 在 first version 中添加 authentication。
+- 在 first version 中要求外部 database。
+- 让 Hibernate 自动 mutate schema。
+- 除非明确要求，否则暴露 status transition 或 delete endpoints。
 
-Current Java package root:
+当前 Java package root：
 
 ```text
 com.bytedance.todos
 ```
 
-Current source layout:
+当前 source layout：
 
 ```text
 services/api/src/main/
@@ -363,7 +514,7 @@ services/api/src/main/
     └── db/migration/
 ```
 
-Local commands:
+本地 commands：
 
 ```bash
 cd services/api
@@ -372,75 +523,78 @@ cd services/api
 ./gradlew test --rerun-tasks
 ```
 
-## Product Contract
+## 产品契约
 
-The product is a minimal Todo Kanban board.
+产品是一个 minimal Todo Kanban board。
 
-Current user-visible scope:
+当前 user-visible scope：
 
-- List todos.
-- Create todo by title.
-- Show todos in three fixed status columns.
-- Show total and per-status counts.
+- List todos。
+- 按 title 创建 todo。
+- 在三个固定 status columns 中展示 todos。
+- 显示 total 和 per-status counts。
 
-Current user-visible non-scope:
+当前 user-visible non-scope：
 
-- No description field.
-- No priority field.
-- No delete action.
-- No edit action in the UI.
-- No drag-and-drop.
-- No move/status action.
-- No custom lane management.
-- No multi-board navigation.
-- No left sidebar.
+- 没有 description field。
+- 没有 priority field。
+- 没有 delete action。
+- UI 中没有 edit action。
+- 没有 drag-and-drop。
+- 没有 move/status action。
+- 没有 custom lane management。
+- 没有 multi-board navigation。
+- 没有 left sidebar。
 
-Keep the UI honest. Do not show buttons, labels, counts, menus, fields, or
-placeholder concepts for features that do not exist.
+保持 UI 诚实。不要为不存在的 features 展示 buttons、labels、counts、menus、fields
+或 placeholder concepts。
 
-## Domain Model
+## 领域模型
 
-Todo fields:
+Todo fields：
 
-- `id`: numeric database identifier.
-- `title`: required non-blank string.
-- `status`: fixed workflow status.
-- `createdAt`: creation timestamp.
-- `updatedAt`: last update timestamp.
+- `id`: numeric database identifier。
+- `title`: required non-blank string。
+- `status`: fixed workflow status。
+- `createdAt`: creation timestamp。
+- `updatedAt`: last update timestamp。
 
-Todo status is fixed:
+Todo status 是固定的：
 
 - `TODO`
 - `DOING`
 - `DONE`
 
-Current creation rule:
+当前 creation rule：
 
-- Client sends only `title`.
-- Backend trims the title.
-- Backend creates the todo with status `TODO`.
+- Client 只发送 `title`。
+- Backend trim title。
+- Backend 创建 status 为 `TODO` 的 todo。
 
-Current update rule:
+当前 update rule：
 
-- Backend supports title update through `PATCH /api/todos/{id}`.
-- Empty or blank update titles are ignored.
-- Web and CLI do not currently expose title editing.
+- Backend 支持通过 `PATCH /api/todos/{id}` 更新 title。
+- Empty 或 blank update titles 会被忽略。
+- Web 和 CLI 当前不暴露 title editing。
 
-## API Contract
+## API 契约
 
-Base URL:
+Base URL：
 
 ```text
 http://localhost:18080
 ```
 
-Configured CORS origin:
+Configured CORS origin：
 
 ```text
-http://localhost:15173
+${CORS_ALLOWED_ORIGIN:http://localhost:15173}
 ```
 
-Endpoints:
+origin 可通过 `CORS_ALLOWED_ORIGIN` 配置；`scripts/dev.sh` 会让它与 `WEB_PORT`
+保持一致。
+
+Endpoints：
 
 ```http
 GET    /api/todos
@@ -449,10 +603,10 @@ GET    /api/todos/{id}
 PATCH  /api/todos/{id}
 ```
 
-Do not document or call endpoints that do not exist. In particular, there is no
-current delete endpoint and no current status-transition endpoint.
+不要 document 或调用不存在的 endpoints。尤其是当前没有 delete endpoint，也没有
+status-transition endpoint。
 
-Create request:
+Create request：
 
 ```json
 {
@@ -460,7 +614,7 @@ Create request:
 }
 ```
 
-Update request:
+Update request：
 
 ```json
 {
@@ -468,7 +622,7 @@ Update request:
 }
 ```
 
-Todo response:
+Todo response：
 
 ```json
 {
@@ -480,7 +634,7 @@ Todo response:
 }
 ```
 
-Not found response shape:
+Not found response shape：
 
 ```json
 {
@@ -488,17 +642,17 @@ Not found response shape:
 }
 ```
 
-## Backend Database
+## Backend 数据库
 
-Use H2 file mode for local training.
+本地训练使用 H2 file mode。
 
-Default local database path:
+默认 local database path：
 
 ```text
 services/api/data/todos
 ```
 
-Current application configuration:
+当前 application configuration：
 
 ```yaml
 server:
@@ -521,39 +675,39 @@ spring:
       enabled: true
 ```
 
-Database schema changes are managed by Flyway migrations under:
+Database schema changes 由以下目录中的 Flyway migrations 管理：
 
 ```text
 services/api/src/main/resources/db/migration/
 ```
 
-Current migration:
+当前 migration：
 
 ```text
 V1__create_todos.sql
 ```
 
-Hibernate validates the schema at startup but does not modify it.
+Hibernate 启动时 validate schema，但不会修改 schema。
 
-Tests use an in-memory H2 database configured under:
+Tests 使用以下位置配置的 in-memory H2 database：
 
 ```text
 services/api/src/test/resources/application.yml
 ```
 
-## Validation Matrix
+## 验证矩阵
 
-Run checks scoped to the files that changed. Do not introduce a root-level build
-or test orchestrator unless explicitly requested.
+运行与变更文件相关的 scoped checks。除非明确要求，否则不要引入 root-level build 或
+test orchestrator。
 
-For web changes:
+对于 web changes：
 
 ```bash
 cd apps/web
 pnpm build
 ```
 
-For CLI changes:
+对于 CLI changes：
 
 ```bash
 cd apps/cli
@@ -561,83 +715,80 @@ pnpm build
 pnpm test
 ```
 
-For API changes:
+对于 API changes：
 
 ```bash
 cd services/api
 ./gradlew test --rerun-tasks
 ```
 
-For documentation-only changes:
+对于 documentation-only changes：
 
 ```bash
 git diff --check
 ```
 
-Before committing mixed changes, run the relevant checks for each changed
-project plus:
+commit mixed changes 前，运行每个 changed project 的相关 checks，并额外运行：
 
 ```bash
 git diff --check
 ```
 
-## Implementation Rules For Agents
+## Agents 实现规则
 
-When modifying this repository:
+修改本仓库时：
 
-1. Keep `apps/web`, `apps/cli`, and `services/api` independent.
-2. Do not add `pnpm-workspace.yaml` unless explicitly requested.
-3. Do not add a root `package.json` unless explicitly requested.
-4. Do not introduce shared packages unless explicitly requested.
-5. Do not create `docs/` until this file becomes too large to maintain.
-6. Prefer simple REST over generated clients in the first version.
-7. Prefer focused project-level checks over full-repo orchestration.
-8. Keep the backend as a single Spring Boot service.
-9. Keep persistence local with H2 unless another database is explicitly
-   introduced.
-10. Do not add authentication in the first version.
-11. Keep visible UI features aligned with real backend capabilities.
-12. Remove dead UI, CLI, API, and docs references when a feature is removed.
-13. Keep user-facing web copy in `apps/web/src/i18n/zhCN.ts`.
-14. Prefer readable code and clear boundaries over premature abstraction.
-15. Do not add AI attribution footers to commits.
+1. 保持 `apps/web`、`apps/cli` 和 `services/api` 独立。
+2. 除非明确要求，否则不要添加 `pnpm-workspace.yaml`。
+3. 除非明确要求，否则不要添加 root `package.json`。
+4. 除非明确要求，否则不要引入 shared packages。
+5. 在本文件变得过大而难以维护之前，不要创建 `docs/`。
+6. first version 中，相比 generated clients，优先使用简单 REST。
+7. 相比 full-repo orchestration，优先使用 focused project-level checks。
+8. 保持 backend 是单个 Spring Boot service。
+9. 除非明确引入其他 database，否则 persistence 保持本地 H2。
+10. first version 中不要添加 authentication。
+11. 保持可见 UI features 与真实 backend capabilities 对齐。
+12. feature 被移除时，同步移除 dead UI、CLI、API 和 docs references。
+13. 将 user-facing web copy 保持在 `apps/web/src/i18n/zhCN.ts`。
+14. 相比 premature abstraction，优先 readable code 和 clear boundaries。
+15. 不要给 commits 添加 AI attribution footers。
 
-## Code Review Rules
+## Code Review 规则
 
-When reviewing changes in this repository:
+review 本仓库变更时：
 
-- Flag any direct dependency between `apps/web` and `apps/cli`.
-- Flag any frontend feature that is not backed by the current API contract.
-- Flag any CLI command that calls a missing or undocumented API.
-- Flag any backend endpoint that is not reflected in this file's API contract.
-- Flag UI copy hardcoded outside `apps/web/src/i18n/zhCN.ts`.
-- Flag large custom CSS files for component-level styling unless there is a
-  clear reason Semi cannot express the layout.
-- Flag schema changes that skip Flyway migrations.
-- Flag Hibernate schema generation settings that would mutate the schema.
-- Flag root-level build or workspace files added without explicit approval.
-- Flag docs that describe deleted features such as priority, description,
-  deletion, status movement, workflow definitions, or swimlanes.
+- 标记 `apps/web` 和 `apps/cli` 之间的任何 direct dependency。
+- 标记任何不受当前 API contract 支撑的 frontend feature。
+- 标记任何调用缺失或未 document API 的 CLI command。
+- 标记任何没有反映在本文件 API contract 中的 backend endpoint。
+- 标记在 `apps/web/src/i18n/zhCN.ts` 外硬编码的 UI copy。
+- 标记用于 component-level styling 的大型 custom CSS files，除非有明确理由说明
+  Semi 无法表达该 layout。
+- 标记跳过 Flyway migrations 的 schema changes。
+- 标记会 mutate schema 的 Hibernate schema generation settings。
+- 标记未经明确批准添加的 root-level build 或 workspace files。
+- 标记描述已删除 features 的 docs，例如 priority、description、deletion、status
+  movement、workflow definitions 或 swimlanes。
 
 ## Training Narrative
 
-This repository is also used to demonstrate an LLM Wiki workflow.
+这个仓库也用于演示 LLM Wiki workflow。
 
-The intended progression is:
+预期演进路径是：
 
-1. Keep `README.md` small and human-focused.
-2. Keep `AGENTS.md` as the detailed agent-readable source of truth.
-3. Let agents use this file to understand constraints before coding.
-4. When this file becomes hard to maintain, split stable sections into `docs/`
-   while keeping a concise `AGENTS.md` map that points to them.
+1. 保持 `README.md` 小而 human-focused。
+2. 保持 `AGENTS.md` 作为详细的 agent-readable source of truth。
+3. 让 agents 在 coding 前通过本文件理解 constraints。
+4. 当本文件变得难以维护时，把稳定章节拆入 `docs/`，同时保留一个简洁的
+   `AGENTS.md` map 指向这些文档。
 
-Do not split into docs prematurely. The current exercise is to show how a single
-accurate `AGENTS.md` can guide future coding agents.
+不要过早拆分到 docs。当前练习是展示一个准确的单文件 `AGENTS.md` 如何指导未来的
+coding agents。
 
-## Future Split Plan
+## 未来拆分计划
 
-When `AGENTS.md` becomes too large or multiple modules need independent
-ownership, split it into:
+当 `AGENTS.md` 变得过大，或多个 modules 需要独立 ownership 时，将它拆分为：
 
 - `docs/architecture.md`
 - `docs/product-contract.md`
@@ -647,5 +798,4 @@ ownership, split it into:
 - `docs/backend.md`
 - `docs/validation.md`
 
-Until then, `AGENTS.md` remains the source of project navigation and agent
-instructions.
+在此之前，`AGENTS.md` 仍然是 project navigation 和 agent instructions 的来源。
