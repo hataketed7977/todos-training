@@ -1,0 +1,21 @@
+AGENTS.md
+  s_dff26aaea05647::t_6967837c77b5b2 20-21,224,754
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "4b871fc534629ba6729e796e87c2869030237adb",
+  "prompts": {},
+  "sessions": {
+    "s_dff26aaea05647": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a03f38-f58d-77e0-bc7e-9b133f127122",
+        "model": "unknown"
+      },
+      "human_author": "Andy Zhang <zhanggang.7977@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
