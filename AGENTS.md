@@ -117,7 +117,7 @@ Local commands:
 ```bash
 cd apps/cli
 pnpm install
-pnpm todo list
+pnpm todo-cli list
 pnpm build
 node dist/index.js list
 ```
@@ -168,23 +168,15 @@ Todo:
 
 - `id`
 - `title`
-- `description`
 - `status`
-- `priority`
 - `createdAt`
 - `updatedAt`
 
-Todo status:
+Todo status is fixed:
 
 - `TODO`
 - `DOING`
 - `DONE`
-
-Todo priority:
-
-- `LOW`
-- `MEDIUM`
-- `HIGH`
 
 ## API Contract
 
@@ -201,25 +193,13 @@ GET    /api/todos
 POST   /api/todos
 GET    /api/todos/{id}
 PATCH  /api/todos/{id}
-DELETE /api/todos/{id}
-PATCH  /api/todos/{id}/status
 ```
 
 Create request:
 
 ```json
 {
-  "title": "Prepare training",
-  "description": "Create the first exercise",
-  "priority": "HIGH"
-}
-```
-
-Update status request:
-
-```json
-{
-  "status": "DOING"
+  "title": "Prepare training"
 }
 ```
 
@@ -229,11 +209,9 @@ Todo response:
 {
   "id": 1,
   "title": "Prepare training",
-  "description": "Create the first exercise",
-  "status": "DOING",
-  "priority": "HIGH",
+  "status": "TODO",
   "createdAt": "2026-08-26T07:00:00Z",
-  "updatedAt": "2026-08-26T07:05:00Z"
+  "updatedAt": "2026-08-26T07:00:00Z"
 }
 ```
 
@@ -249,15 +227,28 @@ services/api/data/todos
 
 Current Spring configuration:
 
-```properties
-spring.datasource.url=jdbc:h2:file:./data/todos
-spring.datasource.driver-class-name=org.h2.Driver
-spring.datasource.username=sa
-spring.datasource.password=
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.open-in-view=false
-spring.h2.console.enabled=true
+```yaml
+spring:
+  datasource:
+    url: jdbc:h2:file:./data/todos
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  flyway:
+    baseline-on-migrate: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  h2:
+    console:
+      enabled: true
 ```
+```
+
+Database schema changes are managed by Flyway migrations under
+services/api/src/main/resources/db/migration/. Hibernate validates the
+schema at startup but does not modify it.
 
 ## Implementation Rules For Agents
 
@@ -282,18 +273,19 @@ Build Todo CRUD API.
 
 Expected result:
 
-- API can create, list, update, and delete todos.
-- API can move a todo between `TODO`, `DOING`, and `DONE`.
+- API can create, list, and update todos.
+- API returns each todo's fixed workflow status.
+- API does not expose status transition endpoints in the first version.
 
 ### Milestone 2: Web Client
 
-Build the Kanban UI.
+Build the Todo board UI.
 
 Expected result:
 
-- User can view todos grouped by status.
 - User can create a todo.
-- User can move a todo between columns.
+- User can view todos in fixed `待处理`, `进行中`, and `已完成` columns.
+- User cannot move todos between columns in the first version.
 
 ### Milestone 3: CLI Client
 
@@ -304,9 +296,6 @@ Expected commands:
 ```bash
 todo list
 todo add "Prepare training"
-todo move 1 doing
-todo done 1
-todo delete 1
 ```
 
 ### Milestone 4: Contract Hardening

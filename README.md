@@ -45,7 +45,31 @@ Use the CLI:
 ```bash
 cd apps/cli
 pnpm install
-pnpm todo list
+pnpm todo-cli list
+```
+
+Install the published CLI globally:
+
+```bash
+npm install --global @bytedance/todo-cli
+todo-cli --help
+```
+
+For a local checkout, build and install the current package globally with one
+command:
+
+```bash
+cd apps/cli
+pnpm install:global
+```
+
+Publish a new version to the public npm registry:
+
+```bash
+cd apps/cli
+npm login
+pnpm pack:check
+pnpm publish
 ```
 
 The web and CLI both call the API at `http://localhost:18080` by default.
