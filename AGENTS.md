@@ -17,8 +17,13 @@ focused checks。
 map、module ownership、product contracts、API contracts、validation matrix，
 以及 agents 在改代码前必须遵守的 implementation rules。
 
-暂时不要创建 `docs/` 目录。这个文件刻意允许比 README 更大。只有当内容变得难以
-导航，或开始接近 agent instruction size limits 时，才在以后拆分。
+暂时不要为了拆分稳定项目说明而创建常规 `docs/` 文档。这个文件刻意允许比 README
+更大。只有当内容变得难以导航，或开始接近 agent instruction size limits 时，才在
+以后拆分。
+
+完整 Superpowers workflows 需要的 `docs/superpowers/...` 例外：当相关 skill 要求
+写入 design spec 或 implementation plan 时，可以创建该目录。不要把这个例外扩展为
+提前拆分 `docs/architecture.md`、`docs/api.md` 等常规项目文档。
 
 ## 系统图
 
@@ -139,21 +144,29 @@ Claude: /grill-me
 Trae:   /grill-me
 ```
 
-### 已安装的 Superpowers Subset
+### 已安装的 Superpowers Skills
 
-仓库包含来自 `obra/superpowers` 的一组小型 portable subset：
+仓库包含来自 `obra/superpowers` 的完整 skill 集：
 
 - `using-superpowers`
 - `brainstorming`
+- `dispatching-parallel-agents`
+- `executing-plans`
+- `finishing-a-development-branch`
+- `receiving-code-review`
+- `requesting-code-review`
+- `subagent-driven-development`
 - `writing-plans`
 - `test-driven-development`
 - `systematic-debugging`
+- `using-git-worktrees`
 - `verification-before-completion`
+- `writing-skills`
 
-这刻意只是一个 training-friendly subset，不是 Superpowers plugin distribution 的
-完整替代品。如果 trainee 需要完整的 Superpowers 体验，请为其 agent 安装官方
-plugin 或 package。本 project-local subset 的存在，是为了让核心 workflow examples
-在这个仓库内可见且可编辑。
+这些 skills 通过 project-local copy 安装到 Codex、Claude Code 和 Trae 对应目录，
+让 trainee 不需要额外安装全局 Superpowers plugin 也能使用完整 workflow。它们仍然
+属于 third-party generated/vendor content，正常项目行为不要手工修改其
+`SKILL.md`。
 
 `using-superpowers` 刻意保持严格。它要求 agent 在行动前检查 relevant skills。
 如果它与直接的用户指令或本文件的 repository rules 冲突，则直接的用户指令和本文件
@@ -191,9 +204,10 @@ npx -y skills@latest add mattpocock/skills \
 
 ```bash
 npx -y skills@latest add obra/superpowers \
-  --skill using-superpowers brainstorming writing-plans test-driven-development systematic-debugging verification-before-completion \
+  --skill '*' \
   --agent claude-code codex trae \
   --copy \
+  --full-depth \
   -y
 ```
 
@@ -212,7 +226,7 @@ developer 真实的 `~/.codex`。
 - Generated API clients
 - Root build orchestrator
 - Shared TypeScript package
-- `docs/` 目录
+- 常规 `docs/` 目录。Superpowers workflows 需要的 `docs/superpowers/...` 例外。
 - Drag-and-drop
 - Todo deletion
 - Status transition APIs

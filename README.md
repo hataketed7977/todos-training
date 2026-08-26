@@ -160,9 +160,12 @@ clone 后请重启 agent 或 IDE，让它重新扫描 local skills 和 commands�
 
 - OpenSpec core workflows: propose, explore, apply, update, sync, archive。
 - `grill-me` 及其来自 `mattpocock/skills` 的必需依赖 `grilling`。
-- 一组小型可移植 Superpowers subset：`using-superpowers`、`brainstorming`、
-  `writing-plans`、`test-driven-development`、`systematic-debugging` 和
-  `verification-before-completion`。
+- 完整的 `obra/superpowers` skills：`using-superpowers`、`brainstorming`、
+  `writing-plans`、`test-driven-development`、`systematic-debugging`、
+  `verification-before-completion`、`using-git-worktrees`、
+  `dispatching-parallel-agents`、`subagent-driven-development`、
+  `executing-plans`、`requesting-code-review`、`receiving-code-review`、
+  `finishing-a-development-branch` 和 `writing-skills`。
 
 常用入口：
 
