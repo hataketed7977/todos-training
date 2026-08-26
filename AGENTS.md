@@ -17,13 +17,8 @@ focused checks。
 map、module ownership、product contracts、API contracts、validation matrix，
 以及 agents 在改代码前必须遵守的 implementation rules。
 
-暂时不要为了拆分稳定项目说明而创建常规 `docs/` 文档。这个文件刻意允许比 README
-更大。只有当内容变得难以导航，或开始接近 agent instruction size limits 时，才在
-以后拆分。
-
-完整 Superpowers workflows 需要的 `docs/superpowers/...` 例外：当相关 skill 要求
-写入 design spec 或 implementation plan 时，可以创建该目录。不要把这个例外扩展为
-提前拆分 `docs/architecture.md`、`docs/api.md` 等常规项目文档。
+这个文件刻意允许比 README 更大。只有当内容变得难以导航，或开始接近 agent
+instruction size limits 时，才在以后拆分。
 
 ## 系统图
 
@@ -226,7 +221,7 @@ developer 真实的 `~/.codex`。
 - Generated API clients
 - Root build orchestrator
 - Shared TypeScript package
-- 常规 `docs/` 目录。Superpowers workflows 需要的 `docs/superpowers/...` 例外。
+- `docs/` 目录
 - Drag-and-drop
 - Todo deletion
 - Status transition APIs
@@ -756,7 +751,7 @@ git diff --check
 2. 除非明确要求，否则不要添加 `pnpm-workspace.yaml`。
 3. 除非明确要求，否则不要添加 root `package.json`。
 4. 除非明确要求，否则不要引入 shared packages。
-5. 在本文件变得过大而难以维护之前，不要创建 `docs/`。
+5. 只有当本文件变得过大而难以维护时，才拆分稳定项目说明。
 6. first version 中，相比 generated clients，优先使用简单 REST。
 7. 相比 full-repo orchestration，优先使用 focused project-level checks。
 8. 保持 backend 是单个 Spring Boot service。
