@@ -4,7 +4,7 @@ import {
   createTodo,
   listTodos,
 } from '../services/todosService'
-import type { Todo, TodoStatus } from '../types/todo'
+import type { Todo, TodoPriority, TodoStatus } from '../types/todo'
 import { todoStatuses } from '../types/todo'
 import { zhCN as i18n } from '../i18n/zhCN'
 
@@ -43,15 +43,26 @@ export function useTodos() {
     [todos],
   )
 
-  async function addTodo(title: string) {
-    const trimmedTitle = title.trim()
+  async function addTodo(input: {
+    title: string
+    description?: string | null
+    priority?: TodoPriority | null
+  }) {
+    const trimmedTitle = input.title.trim()
     if (!trimmedTitle) {
       return
     }
 
+    const trimmedDescription = input.description?.trim()
+    const description = trimmedDescription ? trimmedDescription : null
+
     try {
       setCreating(true)
-      const todo = await createTodo({ title: trimmedTitle })
+      const todo = await createTodo({
+        title: trimmedTitle,
+        description,
+        priority: input.priority ?? null,
+      })
       setTodos((current) => [todo, ...current])
       setError(null)
       Toast.success(i18n.added)

@@ -6,6 +6,7 @@ import { AppHeader } from '../components/AppHeader'
 import { CreateTodoModal } from '../components/CreateTodoModal'
 import { TodoBoard } from '../components/TodoBoard'
 import { useTodos } from '../hooks/useTodos'
+import type { TodoPriority } from '../types/todo'
 
 const { Content } = Layout
 const { Text } = Typography
@@ -21,8 +22,12 @@ export function TodosBoardPage() {
     addTodo,
   } = useTodos()
 
-  async function handleCreate(title: string) {
-    await addTodo(title)
+  async function handleCreate(input: {
+    title: string
+    description?: string | null
+    priority?: TodoPriority | null
+  }) {
+    await addTodo(input)
     setIsCreateOpen(false)
   }
 

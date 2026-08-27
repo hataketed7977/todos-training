@@ -1,5 +1,6 @@
 package com.bytedance.todos.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -23,6 +24,12 @@ public class Todo {
 	@Enumerated(EnumType.STRING)
 	private TodoStatus status = TodoStatus.TODO;
 
+	@Column(length = 2000)
+	private String description;
+
+	@Enumerated(EnumType.STRING)
+	private TodoPriority priority;
+
 	private Instant createdAt;
 
 	private Instant updatedAt;
@@ -31,7 +38,13 @@ public class Todo {
 	}
 
 	public Todo(String title) {
+		this(title, null, null);
+	}
+
+	public Todo(String title, String description, TodoPriority priority) {
 		this.title = title;
+		this.description = description;
+		this.priority = priority;
 	}
 
 	@PrePersist
@@ -56,6 +69,22 @@ public class Todo {
 
 	public void setTitle(String title) {
 		this.title = title;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public TodoPriority getPriority() {
+		return priority;
+	}
+
+	public void setPriority(TodoPriority priority) {
+		this.priority = priority;
 	}
 
 	public TodoStatus getStatus() {

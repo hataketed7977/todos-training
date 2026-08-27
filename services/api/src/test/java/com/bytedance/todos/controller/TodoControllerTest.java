@@ -1,7 +1,9 @@
 package com.bytedance.todos.controller;
 
 import com.bytedance.todos.repository.TodoRepository;
+import com.bytedance.todos.model.Todo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -57,6 +59,79 @@ class TodoControllerTest {
 					.header("Access-Control-Request-Method", "GET"))
 				.andExpect(status().isOk())
 				.andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:15174"));
+	}
+
+	@Test
+	void createsTodoWithTrimmedDescriptionAndPriority() throws Exception {
+		mockMvc.perform(post("/api/todos")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "Prepare training",
+								  "description": "  准备培训材料和场地  ",
+								  "priority": "HIGH"
+								}
+								"""))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.title").value("Prepare training"))
+				.andExpect(jsonPath("$.status").value("TODO"))
+				.andExpect(jsonPath("$.description").value("准备培训材料和场地"))
+				.andExpect(jsonPath("$.priority").value("HIGH"));
+	}
+
+	@Test
+	void createsTodoWithNullDescriptionAndPriorityWhenOmitted() throws Exception {
+		mockMvc.perform(post("/api/todos")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "Prepare training"
+								}
+								"""))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.description").value(nullValue()))
+				.andExpect(jsonPath("$.priority").value(nullValue()));
+	}
+
+	@Test
+	void normalizesBlankDescriptionToNull() throws Exception {
+		mockMvc.perform(post("/api/todos")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "Prepare training",
+								  "description": "   "
+								}
+								"""))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.description").value(nullValue()))
+				.andExpect(jsonPath("$.priority").value(nullValue()));
+	}
+
+	@Test
+	void rejectsInvalidPriority() throws Exception {
+		mockMvc.perform(post("/api/todos")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "Prepare training",
+								  "priority": "URGENT"
+								}
+								"""))
+				.andExpect(status().is4xxClientError());
+	}
+
+	@Test
+	void doesNotExposeSingleTodoOrPatchEndpoints() throws Exception {
+		Todo todo = todoRepository.save(new Todo("Prepare training"));
+
+		mockMvc.perform(get("/api/todos/" + todo.getId()))
+				.andExpect(status().isNotFound());
+
+		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/todos/" + todo.getId())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"title\":\"Updated\"}"))
+				.andExpect(status().isNotFound());
 	}
 
 }

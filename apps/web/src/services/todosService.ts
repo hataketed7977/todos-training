@@ -1,4 +1,4 @@
-import type { Todo } from '../types/todo'
+import type { Todo, TodoPriority } from '../types/todo'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:18080'
 
@@ -28,6 +28,8 @@ export function listTodos(): Promise<Todo[]> {
 
 export function createTodo(input: {
   title: string
+  description?: string | null
+  priority?: TodoPriority | null
 }): Promise<Todo> {
   return request<Todo>('/api/todos', {
     method: 'POST',

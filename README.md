@@ -68,14 +68,13 @@ pnpm install
 pnpm dev
 ```
 
-使用 CLI：
+构建 CLI 底座：
 
 ```bash
 cd apps/cli
 pnpm install
 pnpm build
-pnpm exec todos-cli list
-pnpm exec todos-cli add "Prepare training"
+pnpm test
 ```
 
 全局安装已发布的 CLI：
@@ -101,9 +100,9 @@ pnpm pack
 pnpm publish
 ```
 
-Web 和 CLI 默认都会调用 `http://localhost:18080` 上的 API。API 允许
-`WEB_PORT` 选定的 Web origin；手动启动服务时，请把
-`CORS_ALLOWED_ORIGIN` 设置为 Web URL。
+Web 默认调用 `http://localhost:18080` 上的 API。API 允许 `WEB_PORT` 选定的 Web
+origin；手动启动服务时，请把 `CORS_ALLOWED_ORIGIN` 设置为 Web URL。CLI 当前只
+提供基础启动结构和帮助信息。
 
 ## 本地数据库
 

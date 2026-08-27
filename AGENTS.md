@@ -28,8 +28,8 @@ apps/web  ----\
 apps/cli  ----/
 ```
 
-`apps/web` 和 `apps/cli` 都是 API clients。它们彼此不依赖。`services/api`
-拥有 persistence 和 Todo business rules。
+`apps/web` 是 API client，`apps/cli` 是供学员扩展的 CLI 底座。它们彼此不依赖。
+`services/api` 拥有 persistence 和 Todo business rules。
 
 ## 仓库结构
 
@@ -277,12 +277,15 @@ Styling 规则：
 - Cards 按 API 返回的 `status` 分组。
 - add button 只出现在 `待处理` column。
 - 创建 todo 会打开 Semi Modal。
-- create modal 包含一个必填 title input。
-- input 没有可见 label，使用 placeholder `标题`。
+- create modal 包含一个必填 title input，以及非必填的描述多行输入和优先级下拉选择。
+- title input 没有可见 label，使用 placeholder `标题`。
 - 空 title 或仅包含空白字符的 title 必须 validation 失败。
+- 描述为非必填；提交时 trim，空白描述按未填写处理。
+- 优先级为非必填，取值 `低/中/高`（对应 `LOW/MEDIUM/HIGH`），可以不选或清空。
 - 创建的 todos 通过 `POST /api/todos` 发送给 backend。
 - backend 将新 todos 分配到 `TODO`。
-- Cards 只展示 title。
+- Cards 展示 title；当 todo 填写了优先级或描述时，以普通文本样式补充展示，不引入颜色标签。
+- 长描述在卡片内截断展示，并可查看完整内容。
 - Board columns 在 viewport 内固定高度；长 columns 应在 column body 内滚动，不能造成
   page-level scrolling。
 - Header stats 显示 total count 和 per-status counts。
@@ -319,7 +322,7 @@ launcher 启动 API 时会把 `CORS_ALLOWED_ORIGIN` 设置为
 
 ### apps/cli
 
-目的：通过 API 管理 todos 的 command-line client。
+目的：提供一个可供学员扩展的 CLI 底座。
 
 技术：
 
@@ -328,62 +331,28 @@ launcher 启动 API 时会把 `CORS_ALLOWED_ORIGIN` 设置为
 - Commander
 - pnpm
 
-允许：
-
-- 通过 HTTP 调用 `services/api`。
-- 拥有 command parsing、terminal output 和 CLI-specific application flow。
-- 在镜像 API response shapes 时，拥有 CLI-specific TypeScript types。
-
-不允许：
-
-- 从 `apps/web` import code。
-- 直接读写 database。
-- 在没有明确 architecture change 的情况下引入 shared package。
-
 当前 source layout：
 
 ```text
 apps/cli/src/
 ├── index.ts
-├── application/
-│   ├── ports/
-│   └── todo-use-cases.ts
 ├── cli/
-├── commands/
-├── infrastructure/
-├── output/
 ├── test/
-└── types/
 ```
 
-目录意图：
-
-- `cli/`: Commander program creation 和 process-level run wiring。
-- `commands/`: command definitions 和 argument handling。
-- `application/`: 独立于 Commander 的 use-case orchestration。
-- `application/ports/`: application logic 需要的 interfaces。
-- `infrastructure/`: HTTP client 和 environment configuration。
-- `output/`: terminal formatting 和 printing。
-- `types/`: CLI-side API/domain types。
-- `test/`: 执行前会被编译的 Node test runner tests。
-
-当前 commands：
+当前底座只提供帮助信息：
 
 ```bash
-todos-cli list
-todos-cli add "Prepare training"
+todos-cli --help
 ```
 
-本地 commands：
+本地构建和测试：
 
 ```bash
 cd apps/cli
 pnpm install
 pnpm build
 pnpm test
-pnpm exec todos-cli list
-pnpm exec todos-cli add "Prepare training"
-node dist/index.js list
 ```
 
 从本地 checkout 全局安装当前 CLI：
@@ -391,12 +360,6 @@ node dist/index.js list
 ```bash
 cd apps/cli
 pnpm build:install
-```
-
-配置：
-
-```bash
-TODO_API_URL=http://localhost:18080
 ```
 
 ### services/api
@@ -420,7 +383,7 @@ TODO_API_URL=http://localhost:18080
 - 拥有 persistence。
 - 暴露 REST APIs。
 - 拥有 database migrations。
-- 返回 web 和 CLI 消费的 API response shapes。
+- 返回 web 消费的 API response shapes。
 
 不允许：
 
@@ -466,7 +429,7 @@ cd services/api
 当前 user-visible scope：
 
 - List todos。
-- 按 title 创建 todo。
+- 按 title 创建 todo，并可选择性填写描述和优先级。
 - 在三个固定 status columns 中展示 todos。
 - 显示 total 和 per-status counts。
 
@@ -478,7 +441,9 @@ Todo fields：
 
 - `id`: numeric database identifier。
 - `title`: required non-blank string。
+- `description`: optional free-text string，最大 2000 字符，可为空。
 - `status`: fixed workflow status。
+- `priority`: optional fixed priority，取值 `LOW` / `MEDIUM` / `HIGH`，可为空。
 - `createdAt`: creation timestamp。
 - `updatedAt`: last update timestamp。
 
@@ -488,17 +453,20 @@ Todo status 是固定的：
 - `DOING`
 - `DONE`
 
+Todo priority 是固定的：
+
+- `LOW`
+- `MEDIUM`
+- `HIGH`
+
 当前 creation rule：
 
-- Client 只发送 `title`。
+- Client 发送必填的 `title`，并可选择性发送 `description` 和 `priority`。
 - Backend trim title。
+- Backend trim description；空白或未提供的 description 存为 `NULL`。
+- Backend 不提供 `priority` 默认值；未提供时存为 `NULL`。
 - Backend 创建 status 为 `TODO` 的 todo。
-
-当前 update rule：
-
-- Backend 支持通过 `PATCH /api/todos/{id}` 更新 title。
-- Empty 或 blank update titles 会被忽略。
-- Web 和 CLI 当前不暴露 title editing。
+- `priority` 不影响列表排序，列表仍按 `createdAt` 倒序返回。
 
 ## API 契约
 
@@ -522,8 +490,6 @@ Endpoints：
 ```http
 GET    /api/todos
 POST   /api/todos
-GET    /api/todos/{id}
-PATCH  /api/todos/{id}
 ```
 
 只 document 和调用本节列出的 endpoints。
@@ -532,17 +498,14 @@ Create request：
 
 ```json
 {
-  "title": "Prepare training"
+  "title": "Prepare training",
+  "description": "准备培训材料和场地",
+  "priority": "HIGH"
 }
 ```
 
-Update request：
-
-```json
-{
-  "title": "Update training outline"
-}
-```
+`description` 和 `priority` 均为可选字段；`description` 最大 2000 字符，
+`priority` 取值为 `LOW`、`MEDIUM`、`HIGH`。
 
 Todo response：
 
@@ -550,19 +513,15 @@ Todo response：
 {
   "id": 1,
   "title": "Prepare training",
+  "description": "准备培训材料和场地",
   "status": "TODO",
+  "priority": "HIGH",
   "createdAt": "2026-08-26T07:00:00Z",
   "updatedAt": "2026-08-26T07:00:00Z"
 }
 ```
 
-Not found response shape：
-
-```json
-{
-  "message": "Todo not found: 1"
-}
-```
+未设置的 `description` 和 `priority` 在响应中为 `null`。
 
 ## Backend 数据库
 
@@ -601,6 +560,7 @@ services/api/src/main/resources/db/migration/
 
 ```text
 V1__create_todos.sql
+V2__add_todo_fields.sql
 ```
 
 Hibernate 启动时 validate schema，但不会修改 schema。
@@ -676,7 +636,6 @@ review 本仓库变更时：
 
 - 标记 `apps/web` 和 `apps/cli` 之间的任何 direct dependency。
 - 标记任何不受当前 API contract 支撑的 frontend feature。
-- 标记任何调用缺失或未 document API 的 CLI command。
 - 标记任何没有反映在本文件 API contract 中的 backend endpoint。
 - 标记在 `apps/web/src/i18n/zhCN.ts` 外硬编码的 UI copy。
 - 标记用于 component-level styling 的大型 custom CSS files，除非有明确理由说明

@@ -3,17 +3,30 @@ import { Form } from '@douyinfe/semi-ui/lib/es/form'
 import type { FormApi } from '@douyinfe/semi-ui/lib/es/form'
 import Modal from '@douyinfe/semi-ui/lib/es/modal'
 import { zhCN as i18n } from '../i18n/zhCN'
+import type { TodoPriority } from '../types/todo'
 
 interface CreateTodoFormValues {
   title?: string
+  description?: string
+  priority?: TodoPriority
 }
 
 interface CreateTodoModalProps {
   visible: boolean
   creating: boolean
   onCancel: () => void
-  onCreate: (title: string) => Promise<void>
+  onCreate: (input: {
+    title: string
+    description?: string | null
+    priority?: TodoPriority | null
+  }) => Promise<void>
 }
+
+const priorityOptions: { value: TodoPriority; label: string }[] = [
+  { value: 'LOW', label: i18n.priorityLow },
+  { value: 'MEDIUM', label: i18n.priorityMedium },
+  { value: 'HIGH', label: i18n.priorityHigh },
+]
 
 export function CreateTodoModal({
   visible,
@@ -35,8 +48,15 @@ export function CreateTodoModal({
       return
     }
 
+    const trimmedDescription = values.description?.trim()
+    const description = trimmedDescription ? trimmedDescription : null
+
     try {
-      await onCreate(trimmedTitle)
+      await onCreate({
+        title: trimmedTitle,
+        description,
+        priority: values.priority ?? null,
+      })
       formApiRef.current?.reset()
     } catch {
       // The hook already reports the failure with a Toast. Keep the modal open
@@ -76,6 +96,24 @@ export function CreateTodoModal({
           placeholder={i18n.todoTitlePlaceholder}
           showClear
           validator={(value) => (String(value ?? '').trim() ? '' : i18n.titleRequired)}
+        />
+        <Form.TextArea
+          aria-label={i18n.todoDescription}
+          field="description"
+          noLabel
+          placeholder={i18n.todoDescriptionPlaceholder}
+          autosize
+          maxCount={2000}
+          style={{ marginTop: 12 }}
+        />
+        <Form.Select
+          aria-label={i18n.todoPriority}
+          field="priority"
+          noLabel
+          placeholder={i18n.todoPriorityPlaceholder}
+          optionList={priorityOptions}
+          showClear
+          style={{ width: '100%', marginTop: 12 }}
         />
       </Form>
     </Modal>
