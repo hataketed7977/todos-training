@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -138,6 +139,78 @@ class TodoControllerTest {
 	void returns404WhenDeletingNonExistentTodo() throws Exception {
 		mockMvc.perform(delete("/api/todos/99999"))
 				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void updatesExistingTodoWithAllFields() throws Exception {
+		Todo todo = todoRepository.save(new Todo("旧标题", "旧描述", com.bytedance.todos.model.TodoPriority.LOW));
+
+		mockMvc.perform(put("/api/todos/" + todo.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "  新标题  ",
+								  "description": "  新描述  ",
+								  "priority": "HIGH"
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.title").value("新标题"))
+				.andExpect(jsonPath("$.description").value("新描述"))
+				.andExpect(jsonPath("$.priority").value("HIGH"))
+				.andExpect(jsonPath("$.status").value("TODO"))
+				.andExpect(jsonPath("$.id").value(todo.getId()));
+
+		mockMvc.perform(get("/api/todos"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(1)))
+				.andExpect(jsonPath("$[0].title").value("新标题"))
+				.andExpect(jsonPath("$[0].description").value("新描述"))
+				.andExpect(jsonPath("$[0].priority").value("HIGH"));
+	}
+
+	@Test
+	void updatesTodoClearsDescriptionAndPriority() throws Exception {
+		Todo todo = todoRepository.save(new Todo("标题", "有描述", com.bytedance.todos.model.TodoPriority.HIGH));
+
+		mockMvc.perform(put("/api/todos/" + todo.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "标题",
+								  "description": "   ",
+								  "priority": null
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.description").value(nullValue()))
+				.andExpect(jsonPath("$.priority").value(nullValue()));
+	}
+
+	@Test
+	void returns404WhenUpdatingNonExistentTodo() throws Exception {
+		mockMvc.perform(put("/api/todos/99999")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "任意"
+								}
+								"""))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void rejectsBlankTitleOnUpdate() throws Exception {
+		Todo todo = todoRepository.save(new Todo("旧标题"));
+
+		mockMvc.perform(put("/api/todos/" + todo.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "   "
+								}
+								"""))
+				.andExpect(status().isBadRequest());
 	}
 
 }

@@ -24,6 +24,11 @@ export const zhCN = {
   deleteConfirmTitle: '确定要删除「{title}」吗？此操作不可撤销。',
   deleted: '已删除',
   deleteFailed: '删除失败',
+  edit: '编辑',
+  editTodo: '编辑待办',
+  save: '保存',
+  saved: '已更新待办',
+  editFailed: '更新待办失败。',
   status: {
     TODO: '待处理',
     DOING: '进行中',

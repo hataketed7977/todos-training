@@ -3,7 +3,7 @@ import { Form } from '@douyinfe/semi-ui/lib/es/form'
 import type { FormApi } from '@douyinfe/semi-ui/lib/es/form'
 import Modal from '@douyinfe/semi-ui/lib/es/modal'
 import { zhCN as i18n } from '../i18n/zhCN'
-import type { TodoPriority } from '../types/todo'
+import type { Todo, TodoPriority } from '../types/todo'
 
 interface CreateTodoFormValues {
   title?: string
@@ -13,9 +13,17 @@ interface CreateTodoFormValues {
 
 interface CreateTodoModalProps {
   visible: boolean
-  creating: boolean
+  creating?: boolean
+  updating?: boolean
+  mode?: 'create' | 'edit'
+  initialTodo?: Todo
   onCancel: () => void
-  onCreate: (input: {
+  onCreate?: (input: {
+    title: string
+    description?: string | null
+    priority?: TodoPriority | null
+  }) => Promise<void>
+  onUpdate?: (id: number, input: {
     title: string
     description?: string | null
     priority?: TodoPriority | null
@@ -31,8 +39,12 @@ const priorityOptions: { value: TodoPriority; label: string }[] = [
 export function CreateTodoModal({
   visible,
   creating,
+  updating,
+  mode = 'create',
+  initialTodo,
   onCancel,
   onCreate,
+  onUpdate,
 }: CreateTodoModalProps) {
   const formApiRef = useRef<FormApi<CreateTodoFormValues> | null>(null)
 
@@ -41,6 +53,16 @@ export function CreateTodoModal({
       formApiRef.current?.reset()
     }
   }, [visible])
+
+  useEffect(() => {
+    if (mode === 'edit' && visible && initialTodo) {
+      formApiRef.current?.setValues({
+        title: initialTodo.title,
+        description: initialTodo.description ?? undefined,
+        priority: initialTodo.priority ?? undefined,
+      })
+    }
+  }, [mode, visible, initialTodo])
 
   async function handleSubmit(values: CreateTodoFormValues) {
     const trimmedTitle = values.title?.trim() ?? ''
@@ -52,34 +74,47 @@ export function CreateTodoModal({
     const description = trimmedDescription ? trimmedDescription : null
 
     try {
-      await onCreate({
-        title: trimmedTitle,
-        description,
-        priority: values.priority ?? null,
-      })
-      formApiRef.current?.reset()
+      if (mode === 'edit' && initialTodo && onUpdate) {
+        await onUpdate(initialTodo.id, {
+          title: trimmedTitle,
+          description,
+          priority: values.priority ?? null,
+        })
+        formApiRef.current?.reset()
+      } else if (mode === 'create' && onCreate) {
+        await onCreate({
+          title: trimmedTitle,
+          description,
+          priority: values.priority ?? null,
+        })
+        formApiRef.current?.reset()
+      }
     } catch {
       // The hook already reports the failure with a Toast. Keep the modal open
       // so the user can retry or edit the title.
     }
   }
 
+  const title = mode === 'edit' ? i18n.editTodo : i18n.addTodo
+  const okText = mode === 'edit' ? i18n.save : i18n.add
+  const confirmLoading = mode === 'edit' ? updating : creating
+
   return (
     <Modal
-      title={i18n.addTodo}
+      title={title}
       visible={visible}
       width={480}
       style={{ margin: '48px auto 0' }}
-      okText={i18n.add}
+      okText={okText}
       cancelText={i18n.cancel}
-      confirmLoading={creating}
+      confirmLoading={confirmLoading}
       onOk={() => {
         formApiRef.current?.submitForm()
       }}
       onCancel={onCancel}
     >
       <Form<CreateTodoFormValues>
-        key={visible ? 'create-open' : 'create-closed'}
+        key={visible ? `${mode}-open` : `${mode}-closed`}
         layout="vertical"
         getFormApi={(formApi) => {
           formApiRef.current = formApi

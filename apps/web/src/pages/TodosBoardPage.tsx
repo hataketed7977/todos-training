@@ -6,13 +6,14 @@ import { AppHeader } from '../components/AppHeader'
 import { CreateTodoModal } from '../components/CreateTodoModal'
 import { TodoBoard } from '../components/TodoBoard'
 import { useTodos } from '../hooks/useTodos'
-import type { TodoPriority } from '../types/todo'
+import type { Todo, TodoPriority } from '../types/todo'
 
 const { Content } = Layout
 const { Text } = Typography
 
 export function TodosBoardPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null)
   const {
     todos,
     todosByStatus,
@@ -20,8 +21,10 @@ export function TodosBoardPage() {
     loading,
     creating,
     deleting,
+    updating,
     addTodo,
     removeTodo,
+    editTodo,
   } = useTodos()
 
   async function handleCreate(input: {
@@ -31,6 +34,18 @@ export function TodosBoardPage() {
   }) {
     await addTodo(input)
     setIsCreateOpen(false)
+  }
+
+  async function handleUpdate(
+    id: number,
+    input: {
+      title: string
+      description?: string | null
+      priority?: TodoPriority | null
+    },
+  ) {
+    await editTodo(id, input)
+    setEditingTodo(null)
   }
 
   return (
@@ -68,6 +83,8 @@ export function TodosBoardPage() {
           onCreate={() => setIsCreateOpen(true)}
           onDelete={removeTodo}
           deleting={deleting}
+          onEdit={(todo) => setEditingTodo(todo)}
+          editing={updating}
         />
 
         <CreateTodoModal
@@ -75,6 +92,15 @@ export function TodosBoardPage() {
           creating={creating}
           onCancel={() => setIsCreateOpen(false)}
           onCreate={handleCreate}
+        />
+
+        <CreateTodoModal
+          mode="edit"
+          visible={editingTodo !== null}
+          initialTodo={editingTodo ?? undefined}
+          updating={editingTodo ? updating.has(editingTodo.id) : false}
+          onCancel={() => setEditingTodo(null)}
+          onUpdate={handleUpdate}
         />
       </Content>
     </Layout>

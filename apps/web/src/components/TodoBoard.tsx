@@ -12,6 +12,8 @@ interface TodoBoardProps {
   onCreate: () => void
   onDelete: (id: number) => void
   deleting: Set<number>
+  onEdit: (todo: Todo) => void
+  editing: Set<number>
 }
 
 export function TodoBoard({
@@ -20,6 +22,8 @@ export function TodoBoard({
   onCreate,
   onDelete,
   deleting,
+  onEdit,
+  editing,
 }: TodoBoardProps) {
   return (
     <section
@@ -62,6 +66,8 @@ export function TodoBoard({
                 onCreate={onCreate}
                 onDelete={onDelete}
                 deleting={deleting}
+                onEdit={onEdit}
+                editing={editing}
               />
             </Col>
           ))}

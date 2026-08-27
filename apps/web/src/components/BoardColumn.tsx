@@ -15,6 +15,8 @@ interface BoardColumnProps {
   onCreate: () => void
   onDelete: (id: number) => void
   deleting: Set<number>
+  onEdit: (todo: Todo) => void
+  editing: Set<number>
 }
 
 export function BoardColumn({
@@ -23,6 +25,8 @@ export function BoardColumn({
   onCreate,
   onDelete,
   deleting,
+  onEdit,
+  editing,
 }: BoardColumnProps) {
   return (
     <Card
@@ -82,6 +86,8 @@ export function BoardColumn({
             todo={todo}
             onDelete={onDelete}
             deleting={deleting.has(todo.id)}
+            onEdit={onEdit}
+            editing={editing.has(todo.id)}
           />
         ))}
       </Space>

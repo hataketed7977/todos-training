@@ -4,6 +4,7 @@ import {
   createTodo,
   deleteTodo,
   listTodos,
+  updateTodo,
 } from '../services/todosService'
 import type { Todo, TodoPriority, TodoStatus } from '../types/todo'
 import { todoStatuses } from '../types/todo'
@@ -15,6 +16,7 @@ export function useTodos() {
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<Set<number>>(new Set())
+  const [updating, setUpdating] = useState<Set<number>>(new Set())
 
   const refreshTodos = useCallback(async () => {
     try {
@@ -96,6 +98,44 @@ export function useTodos() {
     }
   }
 
+  async function editTodo(
+    id: number,
+    input: {
+      title: string
+      description?: string | null
+      priority?: TodoPriority | null
+    },
+  ) {
+    const trimmedTitle = input.title.trim()
+    if (!trimmedTitle) {
+      return
+    }
+    const trimmedDescription = input.description?.trim()
+    const description = trimmedDescription ? trimmedDescription : null
+
+    setUpdating(prev => new Set(prev).add(id))
+    try {
+      const updated = await updateTodo(id, {
+        title: trimmedTitle,
+        description,
+        priority: input.priority ?? null,
+      })
+      setTodos(prev => prev.map(t => (t.id === id ? updated : t)))
+      setError(null)
+      Toast.success(i18n.saved)
+    } catch {
+      setError(i18n.editFailed)
+      Toast.error(i18n.editFailed)
+      await refreshTodos()
+    } finally {
+      setUpdating(prev => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
+  }
+
   return {
     todos,
     todosByStatus,
@@ -103,7 +143,9 @@ export function useTodos() {
     loading,
     creating,
     deleting,
+    updating,
     addTodo,
     removeTodo,
+    editTodo,
   }
 }

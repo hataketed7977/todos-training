@@ -42,3 +42,17 @@ export function deleteTodo(id: number): Promise<void> {
     method: 'DELETE',
   })
 }
+
+export function updateTodo(
+  id: number,
+  input: {
+    title: string
+    description?: string | null
+    priority?: TodoPriority | null
+  },
+): Promise<Todo> {
+  return request<Todo>(`/api/todos/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
