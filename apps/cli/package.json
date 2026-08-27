@@ -1,7 +1,7 @@
 {
   "name": "todos-training-cli",
   "version": "0.0.0",
-  "description": "Command-line client for the Todos API",
+  "description": "CLI foundation for Todos training",
   "type": "module",
   "files": [
     "dist",
