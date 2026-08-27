@@ -1,0 +1,42 @@
+services/api/src/main/java/com/bytedance/todos/model/Todo.java
+  s_d6b27a0f8ec815::t_7ef3ffa5cbfff8 3,27-32,41-44,46-47,74-88
+  s_d6b27a0f8ec815::t_f0d0fb370831b2 89
+services/api/src/main/java/com/bytedance/todos/service/TodoService.java
+  s_d6b27a0f8ec815::t_a21ca638346af0 25-30,32
+apps/web/src/components/TodoCard.tsx
+  s_d6b27a0f8ec815::t_a44e6b55efbe92 3-4,6-12,28-42
+apps/web/src/components/CreateTodoModal.tsx
+  s_d6b27a0f8ec815::t_63df1d2275a9b6 6,10-11,18-22,25-30,51-53,55-59,100-117
+AGENTS.md
+  s_dff26aaea05647::t_508b426abf5e9c 31-32,280-281,283-284,287-288,325,343,346,349,386,432,444,446,456-461,464,466-467,469,501-503,507-508,516,518,524,563
+README.md
+  s_dff26aaea05647::t_d5bde2a348428d 71,77,103-105
+openspec/specs/todos/spec.md
+  s_dff26aaea05647::t_82a5a0f69aa771 1-96
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "ca5863b17a2a07e3cd98e00443b4d09f08ac1e0f",
+  "prompts": {},
+  "sessions": {
+    "s_d6b27a0f8ec815": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a03cf4-2a36-7992-a26c-b4d23fbd099d",
+        "model": "unknown"
+      },
+      "human_author": "Andy Zhang <zhanggang.7977@bytedance.com>"
+    },
+    "s_dff26aaea05647": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a03f38-f58d-77e0-bc7e-9b133f127122",
+        "model": "unknown"
+      },
+      "human_author": "Andy Zhang <zhanggang.7977@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
