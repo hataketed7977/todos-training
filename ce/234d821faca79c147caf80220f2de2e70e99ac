@@ -1,0 +1,27 @@
+apps/cli/package.json
+  s_d6b27a0f8ec815::t_654390d48d65c7 4
+apps/cli/src/cli/create-program.ts
+  s_d6b27a0f8ec815::t_b2fdbb4c2d305a 3,8
+apps/cli/src/index.ts
+  s_d6b27a0f8ec815::t_4604e402019379 5
+apps/cli/src/test/cli.test.ts
+  s_d6b27a0f8ec815::t_d9215381d1f954 6-7,13-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "ce234d821faca79c147caf80220f2de2e70e99ac",
+  "prompts": {},
+  "sessions": {
+    "s_d6b27a0f8ec815": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a03cf4-2a36-7992-a26c-b4d23fbd099d",
+        "model": "unknown"
+      },
+      "human_author": "Andy Zhang <zhanggang.7977@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
