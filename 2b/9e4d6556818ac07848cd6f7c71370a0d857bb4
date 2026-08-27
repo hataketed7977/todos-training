@@ -1,0 +1,27 @@
+AGENTS.md
+  s_dff26aaea05647::t_611a210053ac67 198-199,569,579,665-666
+README.md
+  s_dff26aaea05647::t_930a1bc4ffbfda 45-46,110
+scripts/dev.sh
+  s_dff26aaea05647::t_f7b16bea18f616 45,287
+services/api/src/main/resources/application.yml
+  s_dff26aaea05647::t_64b1525e590e40 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "2b9e4d6556818ac07848cd6f7c71370a0d857bb4",
+  "prompts": {},
+  "sessions": {
+    "s_dff26aaea05647": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a03f38-f58d-77e0-bc7e-9b133f127122",
+        "model": "unknown"
+      },
+      "human_author": "Andy Zhang <zhanggang.7977@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
