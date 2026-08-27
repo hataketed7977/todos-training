@@ -1,0 +1,27 @@
+apps/web/src/components/CreateTodoModal.tsx
+  s_d6b27a0f8ec815::t_63df1d2275a9b6 6,10-11,18-22,25-30,51-53,55-59,100-117
+apps/web/src/components/TodoCard.tsx
+  s_d6b27a0f8ec815::t_a44e6b55efbe92 3-4,6-12,28-42
+services/api/src/main/java/com/bytedance/todos/model/Todo.java
+  s_d6b27a0f8ec815::t_7ef3ffa5cbfff8 3,27-32,41-44,46-47,74-89
+services/api/src/main/java/com/bytedance/todos/service/TodoService.java
+  s_d6b27a0f8ec815::t_a21ca638346af0 25-30,32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "060f53eadf9109b0f1fa981b5b4c0b858b7bb929",
+  "prompts": {},
+  "sessions": {
+    "s_d6b27a0f8ec815": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a03cf4-2a36-7992-a26c-b4d23fbd099d",
+        "model": "unknown"
+      },
+      "human_author": "Andy Zhang <zhanggang.7977@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
