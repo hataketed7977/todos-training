@@ -17,8 +17,8 @@ focused checks。
 map、module ownership、product contracts、API contracts、validation matrix，
 以及 agents 在改代码前必须遵守的 implementation rules。
 
-这个文件刻意允许比 README 更大。只有当内容变得难以导航，或开始接近 agent
-instruction size limits 时，才在以后拆分。
+这个文件可以比 README 更详细，但内容应描述当前工程事实和稳定约束，避免记录实现
+过程中的临时决策。
 
 ## 系统图
 
@@ -76,10 +76,8 @@ coding agents 中使用同一套 workflow vocabulary。
 - `.trae/commands/`: Trae slash commands。
 - `openspec/`: OpenSpec project configuration。
 
-不要为了 project-local skills 添加 `.codex/` 目录。Codex 使用 `.agents/skills`
-承载这些 reusable workflows。`~/.codex/prompts` 下的 Codex custom prompts 是
-user-local 的，在 reusable workflow sharing 场景下已 deprecated，因此本仓库不会
-install 或 commit 它们。
+Codex 使用 `.agents/skills` 承载 project-local reusable workflows。本仓库不使用
+`.codex/` 或 `~/.codex/prompts` 作为 project-local skill 入口。
 
 clone 后或修改 skill files 后，请重启 agent 或 IDE，让 local skills 和 commands
 被重新扫描。
@@ -114,9 +112,7 @@ OpenSpec planning boundaries：
 - 不要把生成的 OpenSpec proposal 当作 implementation 授权。
 - 不要因为 OpenSpec artifacts 存在就跳过 validation。
 
-OpenSpec generated files 应通过 OpenSpec CLI 刷新，而不是手工编辑。如果需要
-customization，优先修改 `AGENTS.md` 或 `openspec/config.yaml` 中的 project
-guidance。
+OpenSpec generated files 应通过 OpenSpec CLI 刷新，而不是手工编辑。
 
 ### 已安装的 grill-me Skills
 
@@ -167,68 +163,11 @@ Trae:   /grill-me
 如果它与直接的用户指令或本文件的 repository rules 冲突，则直接的用户指令和本文件
 优先。
 
-### Skill 更新规则
+### Skill 维护规则
 
-Third-party skill files 视为 generated/vendor content：
-
-- 正常 project behavior 不要手工编辑 third-party `SKILL.md` files。
-- 使用 `openspec init` 或 `openspec update` 更新 OpenSpec files，并使用预期的
-  tool targets。
-- 使用 `skills` installer 更新 `mattpocock/skills` 和 `obra/superpowers` files，
-  然后在 commit 前 review diff。
-- 保持 `skills-lock.json` 与已安装的 non-OpenSpec skills 对齐。
-- 保留 `.agents/skills/.openspec-target`；它记录了 shared `.agents/skills` tree
-  的 OpenSpec ownership。
-
-推荐的 regeneration commands：从一次性目录运行，然后 review 后复制进仓库。
-
-```bash
-CODEX_HOME="$(mktemp -d)" npx -y @fission-ai/openspec@latest init \
-  --tools claude,trae,codex \
-  --profile core \
-  --no-animation
-```
-
-```bash
-npx -y skills@latest add mattpocock/skills \
-  --skill grill-me grilling \
-  --agent claude-code codex trae \
-  --copy \
-  -y
-```
-
-```bash
-npx -y skills@latest add obra/superpowers \
-  --skill '*' \
-  --agent claude-code codex trae \
-  --copy \
-  --full-depth \
-  -y
-```
-
-OpenSpec command 上的临时 `CODEX_HOME` 可以避免生成 project-local artifacts 时修改
-developer 真实的 `~/.codex`。
-
-## 当前基线的 Non-Goals
-
-除非用户明确改变 scope，否则不要添加以下内容：
-
-- Authentication 或 users
-- Authorization 或 tenant isolation
-- Docker 或 Kubernetes
-- PostgreSQL 或 MySQL 等外部数据库
-- GraphQL
-- Generated API clients
-- Root build orchestrator
-- Shared TypeScript package
-- `docs/` 目录
-- Drag-and-drop
-- Todo deletion
-- Status transition APIs
-- Todo priority
-- Todo description
-- Multiple boards、lanes、swimlanes、workflow definitions 或 execution flows
-- `.codex/` 或 `~/.codex/prompts` 下的 Codex custom prompts
+Third-party skill files 视为 generated/vendor content。正常项目行为不要手工编辑
+third-party `SKILL.md` files；`skills-lock.json` 应与已安装的 non-OpenSpec skills
+保持一致。
 
 ## 本地 Launcher
 
@@ -287,8 +226,6 @@ developer 真实的 `~/.codex`。
 
 - 从 `apps/cli` import code。
 - 直接读写 database。
-- 除非明确要求，否则添加 drag-and-drop、delete、priority、description、multiple
-  boards 或 custom workflow UI。
 - 在没有明确 architecture change 的情况下引入 shared package。
 
 当前 source layout：
@@ -346,9 +283,6 @@ Styling 规则：
 - 创建的 todos 通过 `POST /api/todos` 发送给 backend。
 - backend 将新 todos 分配到 `TODO`。
 - Cards 只展示 title。
-- 没有 delete button。
-- 没有 status move buttons。
-- 没有 manual refresh button。
 - Board columns 在 viewport 内固定高度；长 columns 应在 column body 内滚动，不能造成
   page-level scrolling。
 - Header stats 显示 total count 和 per-status counts。
@@ -404,7 +338,6 @@ launcher 启动 API 时会把 `CORS_ALLOWED_ORIGIN` 设置为
 
 - 从 `apps/web` import code。
 - 直接读写 database。
-- 添加依赖缺失 backend capabilities 的 commands。
 - 在没有明确 architecture change 的情况下引入 shared package。
 
 当前 source layout：
@@ -440,9 +373,6 @@ apps/cli/src/
 todos-cli list
 todos-cli add "Prepare training"
 ```
-
-除非先有意扩展 backend API，否则不要添加 `delete`、`move`、`done` 或
-status-transition commands。
 
 本地 commands：
 
@@ -496,10 +426,7 @@ TODO_API_URL=http://localhost:18080
 
 - 依赖 `apps/web`。
 - 依赖 `apps/cli`。
-- 在 first version 中添加 authentication。
-- 在 first version 中要求外部 database。
 - 让 Hibernate 自动 mutate schema。
-- 除非明确要求，否则暴露 status transition 或 delete endpoints。
 
 当前 Java package root：
 
@@ -543,20 +470,7 @@ cd services/api
 - 在三个固定 status columns 中展示 todos。
 - 显示 total 和 per-status counts。
 
-当前 user-visible non-scope：
-
-- 没有 description field。
-- 没有 priority field。
-- 没有 delete action。
-- UI 中没有 edit action。
-- 没有 drag-and-drop。
-- 没有 move/status action。
-- 没有 custom lane management。
-- 没有 multi-board navigation。
-- 没有 left sidebar。
-
-保持 UI 诚实。不要为不存在的 features 展示 buttons、labels、counts、menus、fields
-或 placeholder concepts。
+保持 UI 诚实。可见控件和文案应对应当前真实能力。
 
 ## 领域模型
 
@@ -612,8 +526,7 @@ GET    /api/todos/{id}
 PATCH  /api/todos/{id}
 ```
 
-不要 document 或调用不存在的 endpoints。尤其是当前没有 delete endpoint，也没有
-status-transition endpoint。
+只 document 和调用本节列出的 endpoints。
 
 Create request：
 
@@ -751,14 +664,14 @@ git diff --check
 2. 除非明确要求，否则不要添加 `pnpm-workspace.yaml`。
 3. 除非明确要求，否则不要添加 root `package.json`。
 4. 除非明确要求，否则不要引入 shared packages。
-5. 只有当本文件变得过大而难以维护时，才拆分稳定项目说明。
-6. first version 中，相比 generated clients，优先使用简单 REST。
+5. 保持 agent instructions 聚焦当前工程事实和稳定约束。
+6. 当前 API 使用简单 REST，不使用 generated clients。
 7. 相比 full-repo orchestration，优先使用 focused project-level checks。
 8. 保持 backend 是单个 Spring Boot service。
 9. 除非明确引入其他 database，否则 persistence 保持本地 H2。
-10. first version 中不要添加 authentication。
+10. 当前 backend 不包含 authentication，持久化使用本地 H2。
 11. 保持可见 UI features 与真实 backend capabilities 对齐。
-12. feature 被移除时，同步移除 dead UI、CLI、API 和 docs references。
+12. 保持 UI、CLI、API 和 docs references 与当前实现一致。
 13. 将 user-facing web copy 保持在 `apps/web/src/i18n/zhCN.ts`。
 14. 相比 premature abstraction，优先 readable code 和 clear boundaries。
 15. 不要给 commits 添加 AI attribution footers。
@@ -777,34 +690,3 @@ review 本仓库变更时：
 - 标记跳过 Flyway migrations 的 schema changes。
 - 标记会 mutate schema 的 Hibernate schema generation settings。
 - 标记未经明确批准添加的 root-level build 或 workspace files。
-- 标记描述已删除 features 的 docs，例如 priority、description、deletion、status
-  movement、workflow definitions 或 swimlanes。
-
-## Training Narrative
-
-这个仓库也用于演示 LLM Wiki workflow。
-
-预期演进路径是：
-
-1. 保持 `README.md` 小而 human-focused。
-2. 保持 `AGENTS.md` 作为详细的 agent-readable source of truth。
-3. 让 agents 在 coding 前通过本文件理解 constraints。
-4. 当本文件变得难以维护时，把稳定章节拆入 `docs/`，同时保留一个简洁的
-   `AGENTS.md` map 指向这些文档。
-
-不要过早拆分到 docs。当前练习是展示一个准确的单文件 `AGENTS.md` 如何指导未来的
-coding agents。
-
-## 未来拆分计划
-
-当 `AGENTS.md` 变得过大，或多个 modules 需要独立 ownership 时，将它拆分为：
-
-- `docs/architecture.md`
-- `docs/product-contract.md`
-- `docs/api.md`
-- `docs/web.md`
-- `docs/cli.md`
-- `docs/backend.md`
-- `docs/validation.md`
-
-在此之前，`AGENTS.md` 仍然是 project navigation 和 agent instructions 的来源。

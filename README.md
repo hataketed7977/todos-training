@@ -160,12 +160,7 @@ clone 后请重启 agent 或 IDE，让它重新扫描 local skills 和 commands�
 
 - OpenSpec core workflows: propose, explore, apply, update, sync, archive。
 - `grill-me` 及其来自 `mattpocock/skills` 的必需依赖 `grilling`。
-- 完整的 `obra/superpowers` skills：`using-superpowers`、`brainstorming`、
-  `writing-plans`、`test-driven-development`、`systematic-debugging`、
-  `verification-before-completion`、`using-git-worktrees`、
-  `dispatching-parallel-agents`、`subagent-driven-development`、
-  `executing-plans`、`requesting-code-review`、`receiving-code-review`、
-  `finishing-a-development-branch` 和 `writing-skills`。
+- 完整的 `obra/superpowers` skills。
 
 常用入口：
 
@@ -179,9 +174,8 @@ Claude:     /grill-me
 Trae:       /grill-me
 ```
 
-本仓库刻意不使用 `~/.codex/prompts` 下的 Codex custom prompts。它们是
-user-local 的，在可复用 workflow 共享场景下已 deprecated，也不会通过本仓库共享。
-请改用 `$skill-name` 形式的 Codex skills。
+本仓库不使用 `~/.codex/prompts` 下的 Codex custom prompts。请改用
+`$skill-name` 形式的 Codex skills。
 
 ## Agent 与架构说明
 
