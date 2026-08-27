@@ -36,3 +36,9 @@ export function createTodo(input: {
     body: JSON.stringify(input),
   })
 }
+
+export function deleteTodo(id: number): Promise<void> {
+  return request<void>(`/api/todos/${id}`, {
+    method: 'DELETE',
+  })
+}
