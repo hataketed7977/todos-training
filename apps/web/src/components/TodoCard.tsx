@@ -25,6 +25,7 @@ export function TodoCard({ todo, onDelete, deleting }: TodoCardProps) {
       shadows="hover"
       style={{ borderRadius: 8, width: '100%' }}
       bodyStyle={{ padding: 12 }}
+      className="todo-card-wrapper"
     >
       <div style={{ display: 'flex', gap: 12, justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -47,26 +48,33 @@ export function TodoCard({ todo, onDelete, deleting }: TodoCardProps) {
         </div>
         <Popconfirm
           title={i18n.deleteConfirmTitle.replace('{title}', todo.title)}
-          onConfirm={() => onDelete(todo.id)}
+          onConfirm={() => { if (!deleting) onDelete(todo.id) }}
         >
-          <IconDeleteStroked
+          <span
+            className="todo-card-delete-btn"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation()
+            }}
             style={{
               cursor: deleting ? 'not-allowed' : 'pointer',
               flexShrink: 0,
               fontSize: 16,
+              color: 'var(--semi-color-danger)',
               opacity: 0,
               transition: 'opacity 0.2s',
+              display: 'inline-flex',
+              alignItems: 'center',
             }}
-            className="todo-card-delete-icon"
-            onClick={deleting ? (e) => e.stopPropagation() : undefined}
-          />
+          >
+            <IconDeleteStroked />
+          </span>
         </Popconfirm>
       </div>
       <style>{`
-        .semi-card:hover .todo-card-delete-icon {
+        .todo-card-wrapper:hover .todo-card-delete-btn {
           opacity: 0.6 !important;
         }
-        .semi-card .todo-card-delete-icon:hover {
+        .todo-card-wrapper .todo-card-delete-btn:hover {
           opacity: 1 !important;
         }
       `}</style>
