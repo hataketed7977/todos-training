@@ -4,8 +4,10 @@ import com.bytedance.todos.dto.CreateTodoRequest;
 import com.bytedance.todos.model.Todo;
 import com.bytedance.todos.repository.TodoRepository;
 import java.util.List;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class TodoService {
@@ -30,5 +32,12 @@ public class TodoService {
 			}
 		}
 		return todoRepository.save(new Todo(request.title().trim(), description, request.priority()));
+	}
+
+	@Transactional
+	public void delete(Long id) {
+		Todo todo = todoRepository.findById(id)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Todo not found: " + id));
+		todoRepository.delete(todo);
 	}
 }

@@ -4,6 +4,7 @@ import com.bytedance.todos.repository.TodoRepository;
 import com.bytedance.todos.model.Todo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -126,11 +127,29 @@ class TodoControllerTest {
 		Todo todo = todoRepository.save(new Todo("Prepare training"));
 
 		mockMvc.perform(get("/api/todos/" + todo.getId()))
-				.andExpect(status().isNotFound());
+				.andExpect(status().isMethodNotAllowed());
 
 		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/todos/" + todo.getId())
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("{\"title\":\"Updated\"}"))
+				.andExpect(status().isMethodNotAllowed());
+	}
+
+	@Test
+	void deletesExistingTodo() throws Exception {
+		Todo todo = todoRepository.save(new Todo("Prepare training"));
+
+		mockMvc.perform(delete("/api/todos/" + todo.getId()))
+				.andExpect(status().isNoContent());
+
+		mockMvc.perform(get("/api/todos"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(0)));
+	}
+
+	@Test
+	void returns404WhenDeletingNonExistentTodo() throws Exception {
+		mockMvc.perform(delete("/api/todos/99999"))
 				.andExpect(status().isNotFound());
 	}
 
