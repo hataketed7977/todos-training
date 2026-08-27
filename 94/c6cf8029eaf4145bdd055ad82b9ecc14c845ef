@@ -1,0 +1,25 @@
+services/api/src/main/java/com/bytedance/todos/controller/TodoController.java
+  s_b8a7c643e717c8::t_9c766e629783ad 9,11,38-43
+services/api/src/main/java/com/bytedance/todos/service/TodoService.java
+  s_b8a7c643e717c8::t_f209285e7a7935 7,10,36-42
+services/api/src/test/java/com/bytedance/todos/controller/TodoControllerTest.java
+  s_b8a7c643e717c8::t_46d39a3b1d0401 7,130,135-152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "94c6cf8029eaf4145bdd055ad82b9ecc14c845ef",
+  "prompts": {},
+  "sessions": {
+    "s_b8a7c643e717c8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1e741023-9ff4-455e-998f-dc4a547919d3",
+        "model": "unknown"
+      },
+      "human_author": "Andy Zhang <zhanggang.7977@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
