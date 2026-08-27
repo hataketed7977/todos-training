@@ -20,6 +20,10 @@ export const zhCN = {
   cannotReachApi: '无法连接 API，请先启动 services/api。',
   createFailed: '创建待办失败。',
   added: '已添加待办',
+  delete: '删除',
+  deleteConfirmTitle: '确定要删除「{title}」吗？此操作不可撤销。',
+  deleted: '已删除',
+  deleteFailed: '删除失败',
   status: {
     TODO: '待处理',
     DOING: '进行中',
