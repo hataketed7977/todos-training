@@ -25,6 +25,12 @@ lockfile、build command 和 release path。
 ./scripts/dev.sh
 ```
 
+Windows PowerShell：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\dev.ps1
+```
+
 打开：
 
 - Web: `http://localhost:15173`
@@ -35,11 +41,24 @@ lockfile、build command 和 release path。
 ./scripts/dev.sh --detach
 ```
 
+Windows PowerShell：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\dev.ps1 --detach
+```
+
 launcher 默认使用 API port `18080` 和 Web port `15173`。需要时可以覆盖
 Web port；launcher 会把匹配的 origin 传给 API，确保 CORS 保持一致：
 
 ```bash
 WEB_PORT=15174 ./scripts/dev.sh
+```
+
+Windows PowerShell：
+
+```powershell
+$env:WEB_PORT = "15174"
+powershell -ExecutionPolicy Bypass -File .\scripts\dev.ps1
 ```
 
 API 使用 in-memory H2。每次重新启动 API 都会得到干净的 workshop 状态。
@@ -49,7 +68,14 @@ API 使用 in-memory H2。每次重新启动 API 都会得到干净的 workshop 
 ./scripts/dev.sh --reset
 ```
 
-日志和 PID 文件会写入 `/tmp/todos-training/`。
+Windows PowerShell：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\dev.ps1 --reset
+```
+
+macOS/Linux 的日志和 PID 文件会写入 `/tmp/todos-training/`；Windows PowerShell
+版本会写入 `%TEMP%\todos-training\`。
 
 ## 分别运行
 
