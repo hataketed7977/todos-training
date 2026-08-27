@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Toast from '@douyinfe/semi-ui/lib/es/toast'
 import {
   createTodo,
+  deleteTodo,
   listTodos,
 } from '../services/todosService'
 import type { Todo, TodoPriority, TodoStatus } from '../types/todo'
@@ -13,6 +14,7 @@ export function useTodos() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
+  const [deleting, setDeleting] = useState<Set<number>>(new Set())
 
   const refreshTodos = useCallback(async () => {
     try {
@@ -75,12 +77,33 @@ export function useTodos() {
     }
   }
 
+  async function removeTodo(id: number) {
+    setDeleting(prev => new Set(prev).add(id))
+    try {
+      await deleteTodo(id)
+      setTodos(prev => prev.filter(t => t.id !== id))
+      setError(null)
+      Toast.success(i18n.deleted)
+    } catch {
+      setError(i18n.deleteFailed)
+      Toast.error(i18n.deleteFailed)
+    } finally {
+      setDeleting(prev => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
+  }
+
   return {
     todos,
     todosByStatus,
     error,
     loading,
     creating,
+    deleting,
     addTodo,
+    removeTodo,
   }
 }
