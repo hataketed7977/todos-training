@@ -195,8 +195,8 @@ third-party `SKILL.md` files；`skills-lock.json` 应与已安装的 non-OpenSpe
 - 把选定的 Web origin 传给 API 用于 CORS。
 - 当 `node_modules` 缺失或 manifests 发生变化时安装 web/cli dependencies，除非
   使用 `--skip-install`。
-- 默认保留基于文件的 H2 database。`--reset` 在启动前只移除本地 `todos*`
-  database files。
+- API 使用 in-memory H2。每次重新启动 API 都会得到干净 database；`--reset`
+  仅用于明确表达本次启动需要干净状态。
 - 默认把 logs 和 PID files 写到 `/tmp/todos-training/`。
 - foreground mode 收到 Ctrl+C 时，只停止由该 script 启动的 services。
 - 不会把 CLI 作为 long-running service 运行或托管。
@@ -566,13 +566,7 @@ Not found response shape：
 
 ## Backend 数据库
 
-本地训练使用 H2 file mode。
-
-默认 local database path：
-
-```text
-services/api/data/todos
-```
+本地训练使用 in-memory H2。服务重启后数据会重置。
 
 当前 application configuration：
 
@@ -582,7 +576,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:h2:file:./data/todos
+    url: jdbc:h2:mem:todos;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -668,8 +662,8 @@ git diff --check
 6. 当前 API 使用简单 REST，不使用 generated clients。
 7. 相比 full-repo orchestration，优先使用 focused project-level checks。
 8. 保持 backend 是单个 Spring Boot service。
-9. 除非明确引入其他 database，否则 persistence 保持本地 H2。
-10. 当前 backend 不包含 authentication，持久化使用本地 H2。
+9. 除非明确引入其他 database，否则 persistence 保持 in-memory H2。
+10. 当前 backend 不包含 authentication，持久化使用 in-memory H2。
 11. 保持可见 UI features 与真实 backend capabilities 对齐。
 12. 保持 UI、CLI、API 和 docs references 与当前实现一致。
 13. 将 user-facing web copy 保持在 `apps/web/src/i18n/zhCN.ts`。

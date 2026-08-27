@@ -2,7 +2,7 @@ spring:
   application:
     name: todos-api
   datasource:
-    url: jdbc:h2:file:./data/todos
+    url: jdbc:h2:mem:todos;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
     username: sa
     password:

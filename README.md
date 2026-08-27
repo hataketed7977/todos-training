@@ -42,13 +42,12 @@ Web port；launcher 会把匹配的 origin 传给 API，确保 CORS 保持一致
 WEB_PORT=15174 ./scripts/dev.sh
 ```
 
-如果需要干净的 workshop 状态，可以在启动前重置本地 H2 数据：
+API 使用 in-memory H2。每次重新启动 API 都会得到干净的 workshop 状态。
+`--reset` 可以保留在启动命令中，用于明确表达这次启动需要干净状态：
 
 ```bash
 ./scripts/dev.sh --reset
 ```
-
-不使用 `--reset` 时，基于文件的 H2 database 会在服务重启后继续保留。
 
 日志和 PID 文件会写入 `/tmp/todos-training/`。
 
@@ -108,13 +107,7 @@ Web 和 CLI 默认都会调用 `http://localhost:18080` 上的 API。API 允许
 
 ## 本地数据库
 
-API 默认使用 H2 file storage。本地训练不需要外部数据库。
-
-数据库文件会创建在：
-
-```text
-services/api/data/
-```
+API 默认使用 in-memory H2。本地训练不需要外部数据库，服务重启后数据会重置。
 
 ## 验证
 

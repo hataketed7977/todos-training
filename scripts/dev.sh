@@ -7,7 +7,6 @@ STATE_DIR="${TODOS_TRAINING_STATE_DIR:-/tmp/todos-training}"
 API_PORT="${API_PORT:-18080}"
 WEB_PORT="${WEB_PORT:-15173}"
 API_BASE_URL="${API_BASE_URL:-http://localhost:${API_PORT}}"
-API_DATA_DIR="${API_DATA_DIR:-${ROOT}/services/api/data}"
 
 DETACH=0
 RUN_BUILD=0
@@ -43,7 +42,7 @@ Options:
   --build         Run API/Web/CLI build checks before starting services.
   --skip-install  Do not run pnpm install automatically.
   --no-takeover   Do not stop existing processes on ports ${API_PORT}/${WEB_PORT}.
-  --reset         Delete the local H2 database before starting the API.
+  --reset         Start with a clean in-memory H2 database.
   --help          Show this help message.
 
 Default behavior:
@@ -285,19 +284,7 @@ reset_database() {
         return 0
     fi
 
-    if [ "$TAKE_OVER_PORTS" -eq 0 ] && port_open "localhost" "$API_PORT"; then
-        fail "Cannot reset the database while the API is running on port ${API_PORT} with --no-takeover."
-        return 1
-    fi
-
-    local data_dir="$API_DATA_DIR"
-    if [ ! -d "$data_dir" ]; then
-        info "No local database directory found; Flyway will create a new database."
-        return 0
-    fi
-
-    find "$data_dir" -maxdepth 1 -type f -name 'todos*' -print -delete
-    success "Local H2 database reset."
+    info "API uses in-memory H2; a fresh API process starts with a clean database."
 }
 
 install_if_needed() {
