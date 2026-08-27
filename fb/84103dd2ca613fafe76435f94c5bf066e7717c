@@ -1,0 +1,21 @@
+apps/web/src/components/TodoCard.tsx
+  s_b8a7c643e717c8::t_be0579ecd099e2 2,4,18-19,22,29-50,52-72,75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "fb84103dd2ca613fafe76435f94c5bf066e7717c",
+  "prompts": {},
+  "sessions": {
+    "s_b8a7c643e717c8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1e741023-9ff4-455e-998f-dc4a547919d3",
+        "model": "unknown"
+      },
+      "human_author": "Andy Zhang <zhanggang.7977@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
