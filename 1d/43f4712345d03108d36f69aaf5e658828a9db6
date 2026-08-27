@@ -1,7 +1,9 @@
 README.md
   s_dff26aaea05647::t_b3fae8d1e401ef 28-33,44-49,57-63,71-78
+  s_dff26aaea05647::t_8a67d25d18f2f8 28-33,44-49,57-63,71-78
 scripts/dev.ps1
   s_dff26aaea05647::t_9728117fc55d5f 1-522
+  s_dff26aaea05647::t_48159dd38898a5 1-522
 ---
 {
   "schema_version": "authorship/3.0.0",
