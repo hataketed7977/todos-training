@@ -1,0 +1,23 @@
+README.md
+  s_dff26aaea05647::t_b3fae8d1e401ef 28-33,44-49,57-63,71-78
+scripts/dev.ps1
+  s_dff26aaea05647::t_9728117fc55d5f 1-522
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "1d43f4712345d03108d36f69aaf5e658828a9db6",
+  "prompts": {},
+  "sessions": {
+    "s_dff26aaea05647": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a03f38-f58d-77e0-bc7e-9b133f127122",
+        "model": "unknown"
+      },
+      "human_author": "Andy Zhang <zhanggang.7977@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
