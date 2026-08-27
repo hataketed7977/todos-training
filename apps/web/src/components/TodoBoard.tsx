@@ -10,12 +10,16 @@ interface TodoBoardProps {
   loading: boolean
   todosByStatus: Record<TodoStatus, Todo[]>
   onCreate: () => void
+  onDelete: (id: number) => void
+  deleting: Set<number>
 }
 
 export function TodoBoard({
   loading,
   todosByStatus,
   onCreate,
+  onDelete,
+  deleting,
 }: TodoBoardProps) {
   return (
     <section
@@ -56,6 +60,8 @@ export function TodoBoard({
                 column={column}
                 todos={todosByStatus[column.status] ?? []}
                 onCreate={onCreate}
+                onDelete={onDelete}
+                deleting={deleting}
               />
             </Col>
           ))}

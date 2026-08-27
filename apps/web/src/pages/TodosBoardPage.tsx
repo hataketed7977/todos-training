@@ -19,7 +19,9 @@ export function TodosBoardPage() {
     error,
     loading,
     creating,
+    deleting,
     addTodo,
+    removeTodo,
   } = useTodos()
 
   async function handleCreate(input: {
@@ -64,6 +66,8 @@ export function TodosBoardPage() {
           loading={loading}
           todosByStatus={todosByStatus}
           onCreate={() => setIsCreateOpen(true)}
+          onDelete={removeTodo}
+          deleting={deleting}
         />
 
         <CreateTodoModal

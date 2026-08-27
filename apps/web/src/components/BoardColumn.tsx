@@ -13,12 +13,16 @@ interface BoardColumnProps {
   column: TodoBoardColumn
   todos: Todo[]
   onCreate: () => void
+  onDelete: (id: number) => void
+  deleting: Set<number>
 }
 
 export function BoardColumn({
   column,
   todos,
   onCreate,
+  onDelete,
+  deleting,
 }: BoardColumnProps) {
   return (
     <Card
@@ -76,6 +80,8 @@ export function BoardColumn({
           <TodoCard
             key={todo.id}
             todo={todo}
+            onDelete={onDelete}
+            deleting={deleting.has(todo.id)}
           />
         ))}
       </Space>
