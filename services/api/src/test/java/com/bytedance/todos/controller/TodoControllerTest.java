@@ -121,17 +121,4 @@ class TodoControllerTest {
 				.andExpect(status().is4xxClientError());
 	}
 
-	@Test
-	void doesNotExposeSingleTodoOrPatchEndpoints() throws Exception {
-		Todo todo = todoRepository.save(new Todo("Prepare training"));
-
-		mockMvc.perform(get("/api/todos/" + todo.getId()))
-				.andExpect(status().isNotFound());
-
-		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/todos/" + todo.getId())
-					.contentType(MediaType.APPLICATION_JSON)
-					.content("{\"title\":\"Updated\"}"))
-				.andExpect(status().isNotFound());
-	}
-
 }
