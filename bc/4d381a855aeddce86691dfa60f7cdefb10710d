@@ -1,0 +1,27 @@
+scripts/dev.sh
+  s_d6b27a0f8ec815::t_c1831c0b587a49 10,16,39,46,75-77,283-302,394,401,424
+services/api/src/main/java/com/bytedance/todos/config/WebConfig.java
+  s_d6b27a0f8ec815::t_8b72a5d3bb9a9b 1-23
+services/api/src/main/resources/application.yml
+  s_d6b27a0f8ec815::t_24f58a338ed2d4 21-24
+services/api/src/test/java/com/bytedance/todos/controller/TodoControllerTest.java
+  s_d6b27a0f8ec815::t_b483f9a244afb9 6,8,20,53-61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "bc4d381a855aeddce86691dfa60f7cdefb10710d",
+  "prompts": {},
+  "sessions": {
+    "s_d6b27a0f8ec815": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a03cf4-2a36-7992-a26c-b4d23fbd099d",
+        "model": "unknown"
+      },
+      "human_author": "Andy Zhang <zhanggang.7977@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
