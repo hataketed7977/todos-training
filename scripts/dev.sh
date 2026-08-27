@@ -7,11 +7,13 @@ STATE_DIR="${TODOS_TRAINING_STATE_DIR:-/tmp/todos-training}"
 API_PORT="${API_PORT:-18080}"
 WEB_PORT="${WEB_PORT:-15173}"
 API_BASE_URL="${API_BASE_URL:-http://localhost:${API_PORT}}"
+API_DATA_DIR="${API_DATA_DIR:-${ROOT}/services/api/data}"
 
 DETACH=0
 RUN_BUILD=0
 SKIP_INSTALL=0
 TAKE_OVER_PORTS=1
+RESET_DATABASE=0
 
 STARTED_SERVICES=()
 STARTED_PIDS=()
@@ -34,13 +36,14 @@ usage() {
 todos-training local development launcher
 
 Usage:
-  ./scripts/dev.sh [--detach] [--build] [--skip-install] [--no-takeover] [--help]
+  ./scripts/dev.sh [--detach] [--build] [--skip-install] [--no-takeover] [--reset] [--help]
 
 Options:
   --detach        Start API and Web in the background, then exit after checks.
   --build         Run API/Web/CLI build checks before starting services.
   --skip-install  Do not run pnpm install automatically.
   --no-takeover   Do not stop existing processes on ports ${API_PORT}/${WEB_PORT}.
+  --reset         Delete the local H2 database before starting the API.
   --help          Show this help message.
 
 Default behavior:
@@ -68,6 +71,9 @@ parse_args() {
                 ;;
             --no-takeover)
                 TAKE_OVER_PORTS=0
+                ;;
+            --reset)
+                RESET_DATABASE=1
                 ;;
             --help|-h)
                 usage
@@ -274,6 +280,26 @@ force_take_over_port() {
     fi
 }
 
+reset_database() {
+    if [ "$RESET_DATABASE" -eq 0 ]; then
+        return 0
+    fi
+
+    if [ "$TAKE_OVER_PORTS" -eq 0 ] && port_open "localhost" "$API_PORT"; then
+        fail "Cannot reset the database while the API is running on port ${API_PORT} with --no-takeover."
+        return 1
+    fi
+
+    local data_dir="$API_DATA_DIR"
+    if [ ! -d "$data_dir" ]; then
+        info "No local database directory found; Flyway will create a new database."
+        return 0
+    fi
+
+    find "$data_dir" -maxdepth 1 -type f -name 'todos*' -print -delete
+    success "Local H2 database reset."
+}
+
 install_if_needed() {
     local app_dir="$1"
     local label="$2"
@@ -365,13 +391,14 @@ start_services() {
 
     force_take_over_port "$API_PORT" "api" "$api_pid_file"
     force_take_over_port "$WEB_PORT" "web" "$web_pid_file"
+    reset_database
 
     start_service \
         "api" \
         "$ROOT/services/api" \
         "${STATE_DIR}/api.log" \
         "$api_pid_file" \
-        env SERVER_PORT="$API_PORT" ./gradlew bootRun
+        env SERVER_PORT="$API_PORT" CORS_ALLOWED_ORIGIN="http://localhost:${WEB_PORT}" ./gradlew bootRun
 
     wait_for_http "${API_BASE_URL}/api/todos" "api" 120
 
@@ -394,7 +421,7 @@ print_success_summary() {
     echo "  Web: http://localhost:${WEB_PORT}"
     echo ""
     echo "CLI:"
-    echo "  cd apps/cli && TODO_API_URL=${API_BASE_URL} pnpm todo list"
+    echo "  cd apps/cli && TODO_API_URL=${API_BASE_URL} pnpm exec todos-cli list"
     echo ""
     echo "Logs:"
     echo "  API: ${STATE_DIR}/api.log"
