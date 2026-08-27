@@ -1,0 +1,21 @@
+apps/web/src/i18n/zhCN.ts
+  s_b8a7c643e717c8::t_593264a45de0ef 23-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "888d3255224e542664f483946e0f6eeda5e22705",
+  "prompts": {},
+  "sessions": {
+    "s_b8a7c643e717c8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1e741023-9ff4-455e-998f-dc4a547919d3",
+        "model": "unknown"
+      },
+      "human_author": "Andy Zhang <zhanggang.7977@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
