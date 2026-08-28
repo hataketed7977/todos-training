@@ -16,14 +16,28 @@ focused checks。
 根目录 `AGENTS.md` 是 coding agents 的 LLM Wiki entrypoint，包含跨模块的
 repository map、module ownership、product contracts、API contracts、
 validation matrix，以及 agents 在改代码前必须遵守的 implementation rules。
-只对单个模块成立的约定在各模块自己的 `AGENTS.md`：
-
-- `apps/web/AGENTS.md`
-- `apps/cli/AGENTS.md`
-- `services/api/AGENTS.md`
+只对单个模块成立的约定在各模块自己的 `AGENTS.md`。
 
 这些文件可以比 README 更详细，但内容应描述当前工程事实和稳定约束，避免记录实现
 过程中的临时决策。
+
+## 文档索引
+
+索引只指向下一层：根目录文档和各模块的 `AGENTS.md`。各模块 `docs/` 下的
+专题文档由对应模块的 `AGENTS.md` 索引，本文件不跨层列出。
+
+- `docs/architecture.md`：跨模块约束——模块之间禁止的依赖方向、模块间唯一
+  允许的数据交换方式、仓库根目录禁止出现的文件。任何涉及跨模块调用、新增
+  模块间依赖、或在仓库根目录新增构建/配置文件的任务，动手前先读。
+- `apps/web/AGENTS.md`：`apps/web` 模块专属约定（目录意图、styling 规则、
+  本地命令、模块级 review 检查项），并索引本模块 `docs/` 下的专题文档。
+  改动 `apps/web/` 下任何文件前先读。
+- `apps/cli/AGENTS.md`：`apps/cli` 模块专属约定（模块结构、本地命令与
+  focused checks），并索引本模块 `docs/` 下的专题文档。改动 `apps/cli/`
+  下任何文件前先读。
+- `services/api/AGENTS.md`：`services/api` 模块专属约定（数据库与迁移、
+  配置、本地命令、模块级 review 检查项），并索引本模块 `docs/` 下的专题
+  文档。改动 `services/api/` 下任何文件前先读。
 
 ## 系统图
 

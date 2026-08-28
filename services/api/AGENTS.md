@@ -4,6 +4,18 @@
 agents 使用。跨模块的仓库结构、产品契约、领域模型、API 契约、验证矩阵和全局
 实现规则见根目录 `AGENTS.md`。
 
+## 文档索引
+
+本模块 `docs/` 下的专题文档，按任务类型先读：
+
+- `docs/architecture.md`：模块内部分层约定——业务逻辑归 service、controller
+  的 HTTP 适配边界、四类参数校验的位置、repository 与 model 的职责限制。
+  新增端点、改动 controller/service/repository 分层或新增校验逻辑前先读。
+- `docs/api-design.md`：HTTP 接口设计约定——资源命名、201/200/204 状态码
+  选型、错误表达形式。新增或修改 endpoint、调整状态码或错误响应前先读。
+- `docs/testing.md`：测试策略——全栈集成测试形态、各层测试侧重、必须补
+  测试的改动场景、测试文件位置与命名。编写测试或改动需要补测试的代码前先读。
+
 ## 模块说明
 
 `services/api` 拥有 Todo business logic、persistence 和 REST APIs，是系统里

@@ -4,6 +4,19 @@
 使用。跨模块的仓库结构、产品契约、领域模型、API 契约、验证矩阵和全局实现规则
 见根目录 `AGENTS.md`。
 
+## 文档索引
+
+本模块 `docs/` 下的专题文档，按任务类型先读：
+
+- `docs/architecture.md`：模块内部分层约定——pages → hooks → services 的
+  依赖流、归一化防御的位置、API 类型镜像边界。新增页面/hook/service、调整
+  数据获取或状态编排前先读。
+- `docs/ui-rules.md`：UI 视觉约定——Semi 组件取舍原则、圆角与间距档位、
+  颜色取值边界、界面文案归置。新增界面元素、编写样式或组件、添加 UI 文案
+  前先读。
+- `docs/testing.md`：测试策略——当前真实存在的验证门禁及其拦截边界。改动后
+  判断该跑哪些 checks、或考虑引入测试框架前先读。
+
 ## 模块说明
 
 `apps/web` 是基于浏览器的 Todo Kanban UI，通过 HTTP 调用 `services/api`。
