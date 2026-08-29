@@ -1,4 +1,5 @@
 import { Command } from 'commander'
+import { registerCreateCommand } from './commands/create.js'
 import { registerSearchCommand } from './commands/search.js'
 
 export function createProgram(): Command {
@@ -14,6 +15,7 @@ export function createProgram(): Command {
     })
     .option('--api-url <url>', 'API base URL', 'http://localhost:18080')
 
+  registerCreateCommand(program)
   registerSearchCommand(program)
 
   return program

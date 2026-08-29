@@ -1,16 +1,20 @@
 import type { Command } from 'commander'
 import {
+  createTodo,
   ERROR_CODES,
-  fetchTodosByTitle,
+  type CodedError,
   type FetchLike,
+  type Priority,
+  VALID_PRIORITIES,
 } from '../../services/apiClient.js'
 
-export interface RegisterSearchOptions {
+export interface RegisterCreateOptions {
   fetchImpl?: FetchLike
 }
 
 const CLI_ERROR_CODES = {
   INVALID_API_URL: 'INVALID_API_URL',
+  INVALID_PRIORITY: 'INVALID_PRIORITY',
 } as const
 type CliErrorCode = typeof CLI_ERROR_CODES[keyof typeof CLI_ERROR_CODES]
 
@@ -50,12 +54,14 @@ function isCodedError(err: unknown): err is { code: string; message: string } {
   )
 }
 
-export function registerSearchCommand(program: Command, options: RegisterSearchOptions = {}): void {
+export function registerCreateCommand(program: Command, options: RegisterCreateOptions = {}): void {
   program
-    .command('search')
-    .argument('<keyword>', '标题关键词')
-    .description('按标题搜索 todos')
-    .action(async (keyword: string) => {
+    .command('create')
+    .argument('<title>', '任务标题')
+    .description('创建新 todo')
+    .option('-d, --description <text>', '任务描述')
+    .option('-p, --priority <level>', `优先级：LOW | MEDIUM | HIGH（大小写均可）`)
+    .action(async (title: string, opts: { description?: string; priority?: string }) => {
       const rawApiUrl = program.getOptionValue('apiUrl')
       const { writeOut, writeErr } = outputChannel(program)
 
@@ -65,40 +71,43 @@ export function registerSearchCommand(program: Command, options: RegisterSearchO
         }
         const apiUrl: string = rawApiUrl
 
-        const todos = await fetchTodosByTitle({
+        let priority: Priority | undefined
+        if (opts.priority !== undefined) {
+          const upper = opts.priority.toUpperCase()
+          if (!VALID_PRIORITIES.has(upper)) {
+            throw makeCliError(
+              CLI_ERROR_CODES.INVALID_PRIORITY,
+              `Invalid priority: ${opts.priority}. Must be one of: LOW, MEDIUM, HIGH`
+            )
+          }
+          priority = upper as Priority
+        }
+
+        const todo = await createTodo({
           apiUrl,
-          title: keyword,
+          title,
+          description: opts.description,
+          priority,
           fetchImpl: options.fetchImpl,
         })
 
-        if (todos.length === 0) {
-          writeOut('No todos found.\n')
-          return
-        }
-
-        const rows = todos.map(t => ({
-          id: String(t.id),
-          status: t.status,
-          priority: t.priority ?? '-',
-          title: t.title,
-        }))
-        const idW = Math.max('ID'.length, ...rows.map(r => r.id.length))
-        const stW = Math.max('STATUS'.length, ...rows.map(r => r.status.length))
-        const prW = Math.max('PRIORITY'.length, ...rows.map(r => r.priority.length))
-        const tiW = Math.max('TITLE'.length, ...rows.map(r => r.title.length))
-
-        writeOut(`Found ${todos.length} todo(s)\n`)
-        writeOut('\n')
-        writeOut(`${'ID'.padEnd(idW)} ${'STATUS'.padEnd(stW)} ${'PRIORITY'.padEnd(prW)} ${'TITLE'.padEnd(tiW)}\n`)
-        writeOut(`${''.padEnd(idW, '-')} ${''.padEnd(stW, '-')} ${''.padEnd(prW, '-')} ${''.padEnd(tiW, '-')}\n`)
-        for (const r of rows) {
-          writeOut(`${r.id.padEnd(idW)} ${r.status.padEnd(stW)} ${r.priority.padEnd(prW)} ${r.title.padEnd(tiW)}\n`)
-        }
+        writeOut(`Todo created successfully:\n`)
+        writeOut(`  ID:          ${todo.id}\n`)
+        writeOut(`  Title:       ${todo.title}\n`)
+        writeOut(`  Status:      ${todo.status}\n`)
+        writeOut(`  Priority:    ${todo.priority ?? '-'}\n`)
+        writeOut(`  Description: ${todo.description ?? '-'}\n`)
+        writeOut(`  Created At:  ${todo.createdAt}\n`)
       } catch (err: unknown) {
         if (isCodedError(err)) {
           switch (err.code) {
             case CLI_ERROR_CODES.INVALID_API_URL:
-            case ERROR_CODES.SEARCH_HTTP_ERROR:
+            case CLI_ERROR_CODES.INVALID_PRIORITY:
+              writeErr(`${err.message}\n`)
+              break
+            case ERROR_CODES.CREATE_HTTP_ERROR:
+              writeErr(`${err.message}\n`)
+              break
             case ERROR_CODES.PARSE_ERROR:
               writeErr(`${err.message}\n`)
               break
