@@ -28,10 +28,12 @@
 源码在 `src/`：`index.ts` 是入口，`cli/` 放 Commander program 的构建与运行
 逻辑，`test/` 放测试。
 
-当前底座只提供帮助信息，不发起任何网络请求：
+当前底座提供帮助信息与 `search` 子命令。`search` 通过 Node 20 内置 `fetch` 调用 `services/api` 的 `GET /api/todos?title=xxx`：
 
 ```bash
 todos-cli --help
+todos-cli search <keyword>          # 按标题搜索 todos（默认连接 http://localhost:18080）
+todos-cli --api-url http://x:y search <keyword>
 ```
 
 ## 本地命令

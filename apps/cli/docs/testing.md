@@ -83,8 +83,12 @@ mock：测试中没有任何 mock 框架或模块替换。
 ## 5. 测试文件的位置与命名
 
 - 测试源码放在 `src/test/` 目录，文件名形如 `<name>.test.ts`；编译后对应
-  `dist/test/<name>.test.js` 被 `node --test` 运行（现状：
-  `src/test/cli.test.ts` → `dist/test/cli.test.js`，`package.json:16`）。
+  `dist/test/<name>.test.js`，`package.json:16` 的 test 脚本使用
+  `node --test dist/test/*.test.js`（由 shell 展开的 glob 模式），因此只要
+  源文件落在 `src/test/*.test.ts` 下，就会被自动执行；现状：
+  `src/test/cli.test.ts` 与 `src/test/search.test.ts` 分别编译为
+  `dist/test/cli.test.js` 与 `dist/test/search.test.js`，二者均随
+  `pnpm test` 一同运行。
 - 测试文件与生产代码共享 `tsconfig.json`（`include: ["src/**/*.ts"]`，
   `tsconfig.json:13`），类型检查和编译覆盖测试代码；不需要为测试单独维护
   编译配置。

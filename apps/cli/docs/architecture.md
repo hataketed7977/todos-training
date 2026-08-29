@@ -42,6 +42,8 @@
 - `argv = process.argv`：待解析的参数数组；
 - `writeError = console.error`：错误信息输出槽。
 
+除 argv 与 writeError 外，业务模块新增的网络层函数（如 `fetchTodosByTitle`）还支持把 `fetch` 实现作为参数注入（`src/services/apiClient.ts` 中的 `fetchImpl?: FetchLike`，默认取全局 `fetch`），以避免测试发起真实网络请求。违反后果：search.test.ts 中 5 个 case 均依赖注入假 `fetchImpl` 返回构造数据（见 `src/test/search.test.ts` 的 `makeProgramWithFetch`），若直接在 apiClient 内调用 `globalThis.fetch` 而不提供注入点，测试只能通过 monkey-patch 全局 fetch，易在同一进程内相互污染。
+
 约束什么：业务代码（program 配置、命令动作）不直接读 `process.argv`、不
 直接 `console.error`；需要这两个能力时经由 `runCli` 的参数。默认值保证
 真实入口 `index.ts` 不传参也能工作（`src/index.ts:5`）。
@@ -55,18 +57,28 @@
 
 ## 3. 失败时设置 exitCode，不调用 process.exit
 
-`runCli` 捕获解析异常后，把错误消息交给 `writeError`，然后设置
-`process.exitCode = 1`（`src/cli/run.ts:10-13`），全程不调用
-`process.exit()`。
+`createProgram` 在 program 上调用 `.exitOverride()`
+（`src/cli/create-program.ts:10`），这保证 Commander 在遇到解析错误、
+帮助显示、版本显示时一律抛异常，绝不内部调用 `process.exit()` 强杀进
+程；随后这些异常由 `runCli` 统一捕获。
+`runCli` 捕获解析异常后（`src/cli/run.ts:12-20`），读取异常对象上的
+`exitCode` 属性（Commander 抛出的 CommanderError 自带该属性，如
+`commander.helpDisplayed` 的 exitCode 为 0、缺参错误为 1），无属性时
+兜底为 1。仅当最终 exitCode 非 0 时，`runCli` 才把错误消息通过
+`writeError` 参数写出；无论是否写错误消息，都设置
+`process.exitCode = <exitCode>`。全程不调用 `process.exit()`。
 
-约束什么：命令动作和错误处理都通过“退出码 + 输出”表达失败，让 Node 进程
-自然结束；不要在代码里强行终止进程。
+约束什么：命令动作和错误处理都通过"退出码 + 输出"表达失败，让 Node 进程
+自然结束；不要在代码里强行终止进程。Commander 的正常/异常分支统一走
+throw → catch → exitCode 这条路径。
 
-违反后果：`process.exit()` 会立即终止当前进程——测试是在同一个 Node 进程
-里 `await runCli(...)` 之后继续做断言的
-（`src/test/cli.test.ts:11-14`），任何一处 `process.exit()` 都会直接杀掉
-测试进程，后续断言无法执行。设置 `exitCode` 则让测试可以在解析完成后继续
-检查 program 状态。
+违反后果：若去掉 `.exitOverride()`，Commander 会在解析错误/帮助分支上
+直接 `process.exit(code)`。由于测试是在同一 Node 进程里
+`await runCli(...)` 之后继续断言（`src/test/cli.test.ts:7-14` 与
+`src/test/search.test.ts` 各 case），任何一处 `process.exit()` 都会把
+测试进程当场杀掉，后续断言、后续用例全部无法执行。改用
+`process.exitCode` 并加 `.exitOverride()`，测试才能在解析完成后继续
+检查 program 状态、错误输出和退出码。
 
 ## 4. CLI 输出走 Commander 的输出通道
 
@@ -122,5 +134,16 @@ program 当前不注册任何子命令（`src/cli/create-program.ts:6-13` 只有
 新增网络能力属于功能扩展而非底座结构变更。
 
 违反后果：新增子命令后，`src/test/cli.test.ts:13-14` 两条断言会失败——
-这不是测试写错，而是该测试在显式守卫“底座只有帮助信息”的基线；扩展命令
+这不是测试写错，而是该测试在显式守卫"底座只有帮助信息"的基线；扩展命令
 时应同步更新这两条断言以描述新的命令表面（见 `docs/testing.md` 第 4 节）。
+印证：`src/test/cli.test.ts:12-14` 已更新为断言 `commands[0].name() === 'search'` 并匹配帮助含"按标题搜索 todos"。
+
+## 7. 新增目录与全局选项
+
+源码下新增两类目录，职责固定：
+- `src/services/`（如 `src/services/apiClient.ts`）：仅承载纯业务资源访问（HTTP、IO 封装），不依赖 Commander、不读 `process` 全局、不写 `console`。每个导出函数的运行期副作用（如 fetch 实现）必须通过参数注入。
+- `src/cli/commands/`（如 `src/cli/commands/search.ts`）：每个文件导出一个 `register<Name>Command(program, options?)` 函数，只做一件事——在传入的 Commander program 上注册一个子命令和它的 action。action 内部必须通过 `program.getOptionValue(...)` 读取全局选项，通过 Commander 的 `configureOutput._writeOut/_writeErr` 访问输出通道（或同等 Commander API），不得直接 `process.stdout/stderr` 或 `console.log/error`。
+
+全局 `--api-url <url>` 选项注册在 program 顶层（`src/cli/create-program.ts:11`），默认值 `http://localhost:18080`，所有需要调用后端的子命令均 MUST 通过 `program.getOptionValue('apiUrl')` 读取该值而不得硬编码。
+
+约束什么：新目录下的文件必须按职责分类，不得把 HTTP 封装混进 command action，不得把 Commander 依赖渗进 services 层。违反后果：测试无法独立替换 fetch 实现（services 读了 Commander 状态）；命令 action 内直接写 stdout 会导致 `configureOutput(writeOut)` 捕获不到输出，search.test.ts 的捕获断言失效（见 `src/test/search.test.ts` 各 case 对 out/err 数组的断言）。
