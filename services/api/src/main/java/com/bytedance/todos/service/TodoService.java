@@ -2,7 +2,7 @@ package com.bytedance.todos.service;
 
 import com.bytedance.todos.dto.CreateTodoRequest;
 import com.bytedance.todos.dto.UpdateTodoRequest;
-import com.bytedance.todos.model.Todo;
+import com.bytedance.todos.model.TodoEntity;
 import com.bytedance.todos.repository.TodoRepository;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -19,12 +19,12 @@ public class TodoService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<Todo> list() {
+	public List<TodoEntity> list() {
 		return todoRepository.findAllByOrderByCreatedAtDesc();
 	}
 
 	@Transactional(readOnly = true)
-	public List<Todo> search(String title) {
+	public List<TodoEntity> search(String title) {
 		if (title != null) {
 			String trimmed = title.trim();
 			if (trimmed.isEmpty()) {
@@ -36,7 +36,7 @@ public class TodoService {
 	}
 
 	@Transactional
-	public Todo create(CreateTodoRequest request) {
+	public TodoEntity create(CreateTodoRequest request) {
 		String description = request.description();
 		if (description != null) {
 			description = description.trim();
@@ -44,12 +44,12 @@ public class TodoService {
 				description = null;
 			}
 		}
-		return todoRepository.save(new Todo(request.title().trim(), description, request.priority()));
+		return todoRepository.save(new TodoEntity(request.title().trim(), description, request.priority()));
 	}
 
 	@Transactional
-	public Todo update(Long id, UpdateTodoRequest request) {
-		Todo todo = todoRepository.findById(id)
+	public TodoEntity update(Long id, UpdateTodoRequest request) {
+		TodoEntity todo = todoRepository.findById(id)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Todo not found: " + id));
 		todo.setTitle(request.title().trim());
 		String description = request.description();
@@ -69,7 +69,7 @@ public class TodoService {
 
 	@Transactional
 	public void delete(Long id) {
-		Todo todo = todoRepository.findById(id)
+		TodoEntity todo = todoRepository.findById(id)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Todo not found: " + id));
 		todoRepository.delete(todo);
 	}

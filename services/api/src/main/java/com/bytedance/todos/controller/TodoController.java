@@ -2,7 +2,7 @@ package com.bytedance.todos.controller;
 
 import com.bytedance.todos.dto.CreateTodoRequest;
 import com.bytedance.todos.dto.UpdateTodoRequest;
-import com.bytedance.todos.model.Todo;
+import com.bytedance.todos.model.TodoEntity;
 import com.bytedance.todos.service.TodoService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -28,7 +28,7 @@ public class TodoController {
 	}
 
 	@GetMapping
-	public List<Todo> list(@RequestParam(name = "title", required = false) String title) {
+	public List<TodoEntity> list(@RequestParam(name = "title", required = false) String title) {
 		if (title != null) {
 			return todoService.search(title);
 		}
@@ -37,13 +37,13 @@ public class TodoController {
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	public Todo create(@Valid @RequestBody CreateTodoRequest request) {
+	public TodoEntity create(@Valid @RequestBody CreateTodoRequest request) {
 		return todoService.create(request);
 	}
 
 	@PutMapping("/{id}")
 	@ResponseStatus(HttpStatus.OK)
-	public Todo update(@PathVariable Long id, @Valid @RequestBody UpdateTodoRequest request) {
+	public TodoEntity update(@PathVariable Long id, @Valid @RequestBody UpdateTodoRequest request) {
 		return todoService.update(id, request);
 	}
 

@@ -14,7 +14,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "todos")
-public class Todo {
+public class TodoEntity {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -34,14 +34,14 @@ public class Todo {
 
 	private Instant updatedAt;
 
-	protected Todo() {
+	protected TodoEntity() {
 	}
 
-	public Todo(String title) {
+	public TodoEntity(String title) {
 		this(title, null, null);
 	}
 
-	public Todo(String title, String description, TodoPriority priority) {
+	public TodoEntity(String title, String description, TodoPriority priority) {
 		this.title = title;
 		this.description = description;
 		this.priority = priority;

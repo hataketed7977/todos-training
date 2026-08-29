@@ -1,7 +1,7 @@
 package com.bytedance.todos.controller;
 
 import com.bytedance.todos.repository.TodoRepository;
-import com.bytedance.todos.model.Todo;
+import com.bytedance.todos.model.TodoEntity;
 import com.bytedance.todos.model.TodoStatus;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
@@ -126,7 +126,7 @@ class TodoControllerTest {
 
 	@Test
 	void deletesExistingTodo() throws Exception {
-		Todo todo = todoRepository.save(new Todo("Prepare training"));
+		TodoEntity todo = todoRepository.save(new TodoEntity("Prepare training"));
 
 		mockMvc.perform(delete("/api/todos/" + todo.getId()))
 				.andExpect(status().isNoContent());
@@ -144,7 +144,7 @@ class TodoControllerTest {
 
 	@Test
 	void updatesExistingTodoWithAllFields() throws Exception {
-		Todo todo = todoRepository.save(new Todo("旧标题", "旧描述", com.bytedance.todos.model.TodoPriority.LOW));
+		TodoEntity todo = todoRepository.save(new TodoEntity("旧标题", "旧描述", com.bytedance.todos.model.TodoPriority.LOW));
 
 		mockMvc.perform(put("/api/todos/" + todo.getId())
 						.contentType(MediaType.APPLICATION_JSON)
@@ -172,7 +172,7 @@ class TodoControllerTest {
 
 	@Test
 	void updatesTodoClearsDescriptionAndPriority() throws Exception {
-		Todo todo = todoRepository.save(new Todo("标题", "有描述", com.bytedance.todos.model.TodoPriority.HIGH));
+		TodoEntity todo = todoRepository.save(new TodoEntity("标题", "有描述", com.bytedance.todos.model.TodoPriority.HIGH));
 
 		mockMvc.perform(put("/api/todos/" + todo.getId())
 						.contentType(MediaType.APPLICATION_JSON)
@@ -202,7 +202,7 @@ class TodoControllerTest {
 
 	@Test
 	void rejectsBlankTitleOnUpdate() throws Exception {
-		Todo todo = todoRepository.save(new Todo("旧标题"));
+		TodoEntity todo = todoRepository.save(new TodoEntity("旧标题"));
 
 		mockMvc.perform(put("/api/todos/" + todo.getId())
 						.contentType(MediaType.APPLICATION_JSON)
@@ -216,7 +216,7 @@ class TodoControllerTest {
 
 	@Test
 	void updateShouldChangeStatusWhenProvided() throws Exception {
-		Todo todo = todoRepository.save(new Todo("旧标题", "旧描述", com.bytedance.todos.model.TodoPriority.LOW));
+		TodoEntity todo = todoRepository.save(new TodoEntity("旧标题", "旧描述", com.bytedance.todos.model.TodoPriority.LOW));
 
 		mockMvc.perform(put("/api/todos/" + todo.getId())
 						.contentType(MediaType.APPLICATION_JSON)
@@ -235,13 +235,13 @@ class TodoControllerTest {
 				.andExpect(jsonPath("$.status").value("DOING"))
 				.andExpect(jsonPath("$.id").value(todo.getId()));
 
-		Todo saved = todoRepository.findById(todo.getId()).orElseThrow();
+		TodoEntity saved = todoRepository.findById(todo.getId()).orElseThrow();
 		assert saved.getStatus() == TodoStatus.DOING;
 	}
 
 	@Test
 	void updateShouldPreserveStatusWhenOmitted() throws Exception {
-		Todo todo = todoRepository.save(new Todo("旧标题", "旧描述", com.bytedance.todos.model.TodoPriority.LOW));
+		TodoEntity todo = todoRepository.save(new TodoEntity("旧标题", "旧描述", com.bytedance.todos.model.TodoPriority.LOW));
 		todo.setStatus(TodoStatus.DONE);
 		todo = todoRepository.save(todo);
 
@@ -262,9 +262,9 @@ class TodoControllerTest {
 
 	@Test
 	void searchTodosByTitle_singleMatch() throws Exception {
-		todoRepository.save(new Todo("准备培训"));
-		todoRepository.save(new Todo("培训报告"));
-		todoRepository.save(new Todo("代码 review"));
+		todoRepository.save(new TodoEntity("准备培训"));
+		todoRepository.save(new TodoEntity("培训报告"));
+		todoRepository.save(new TodoEntity("代码 review"));
 
 		mockMvc.perform(get("/api/todos").param("title", "代码"))
 				.andExpect(status().isOk())
@@ -274,8 +274,8 @@ class TodoControllerTest {
 
 	@Test
 	void searchTodosByTitle_caseInsensitiveAndOrderedByCreatedAtDesc() throws Exception {
-		todoRepository.save(new Todo("Prepare training"));
-		todoRepository.save(new Todo("TRAINING report"));
+		todoRepository.save(new TodoEntity("Prepare training"));
+		todoRepository.save(new TodoEntity("TRAINING report"));
 
 		mockMvc.perform(get("/api/todos").param("title", "training"))
 				.andExpect(status().isOk())
@@ -286,7 +286,7 @@ class TodoControllerTest {
 
 	@Test
 	void searchTodosByTitle_noMatchReturnsEmptyArray() throws Exception {
-		todoRepository.save(new Todo("任意标题"));
+		todoRepository.save(new TodoEntity("任意标题"));
 
 		mockMvc.perform(get("/api/todos").param("title", "不存在关键词"))
 				.andExpect(status().isOk())
@@ -295,8 +295,8 @@ class TodoControllerTest {
 
 	@Test
 	void searchTodosByTitle_blankTitleFallsBackToFullList() throws Exception {
-		todoRepository.save(new Todo("任务一"));
-		todoRepository.save(new Todo("任务二"));
+		todoRepository.save(new TodoEntity("任务一"));
+		todoRepository.save(new TodoEntity("任务二"));
 
 		mockMvc.perform(get("/api/todos").param("title", "   "))
 				.andExpect(status().isOk())
@@ -309,9 +309,9 @@ class TodoControllerTest {
 
 	@Test
 	void searchTodosByTitle_noParamPreservesOriginalFullListBehavior() throws Exception {
-		todoRepository.save(new Todo("任务一"));
-		todoRepository.save(new Todo("任务二"));
-		todoRepository.save(new Todo("任务三"));
+		todoRepository.save(new TodoEntity("任务一"));
+		todoRepository.save(new TodoEntity("任务二"));
+		todoRepository.save(new TodoEntity("任务三"));
 
 		mockMvc.perform(get("/api/todos"))
 				.andExpect(status().isOk())
