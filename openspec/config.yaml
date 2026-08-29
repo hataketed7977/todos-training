@@ -1,4 +1,4 @@
-schema: spec-driven
+schema: spec-driven-tdd
 context: |
   项目知识按层级组织，索引只指向下一层，不跨层平铺：
   - 根 AGENTS.md 是入口，含跨模块契约、依赖方向与验证矩阵，并索引各模块 AGENTS.md
@@ -15,3 +15,27 @@ rules:
     - 改动涉及组件选型或样式方案时，必须包含更新
       对应模块 docs/ui-rules.md 的任务
     - 文档更新任务与代码任务并列，不要合并成一条任务
+    # ---- TDD 强制规则（与 spec-driven-tdd schema 的 tasks instruction 一致）----
+    # 1. 每个有代码改动的模块必须显式展开 RED→GREEN→(REFACTOR) 三节，
+    #    不得将「写测试」与「写实现」合并为同一条 task。
+    - tasks.md 中，每个受影响模块必须分三节呈现：RED（写失败测试+确认红）、
+      GREEN（最小实现+同一条 focused 命令转绿）、REFACTOR（可选，每步后重跑同一条
+      focused 命令确认仍绿）。禁止合并为「实现并补测试」。
+    # 2. 测试文件路径必须写绝对路径且落到具体文件名，不得模糊。
+    - RED Phase 的每条测试子任务必须写出测试文件的绝对路径到具体文件名
+      （如 services/api/src/test/java/com/bytedance/todos/controller/TodoControllerTest.java）。
+      不得写「后端测试」「补测试」「写用例」等无文件指针的模糊表述。
+    # 3. focused test 命令必须可粘贴直接运行，不得笼统。
+    - RED Phase 和 GREEN Phase 的运行测试子任务必须写出可复制粘贴直接运行的
+      focused 命令（含 cd 到具体模块目录、具体 --tests 过滤或 --test-name-pattern
+      或单文件路径）。不得写「跑一下测试」「./gradlew test」「pnpm test」等
+      非 focused 的笼统命令；GREEN Phase 必须复用 RED Phase 写的同一条
+      focused 命令，不得换用更大范围的命令。
+    # 4. 模块级回归命令也必须具体可运行。
+    - GREEN Phase 末尾的模块级回归子任务必须写出完整可运行命令
+      （如 cd services/api && ./gradlew test）。不得用「跑全量测试」描述。
+    # 5. 若确实跳过测试，必须显式写「跳过原因」且证据可 grep 验证。
+    - 若某个模块跳过 RED/GREEN，必须在该模块 RED 标题行后紧邻的 HTML 注释块
+      内以 `跳过原因：...` 开头写明理由，理由必须引用可验证的事实
+      （如「无逻辑分支」「仅 i18n 文案常量」）并给出替代验收方式。
+      不得写「无需测试」「这个简单就不测了」。
