@@ -23,6 +23,18 @@ public class TodoService {
 		return todoRepository.findAllByOrderByCreatedAtDesc();
 	}
 
+	@Transactional(readOnly = true)
+	public List<Todo> search(String title) {
+		if (title != null) {
+			String trimmed = title.trim();
+			if (trimmed.isEmpty()) {
+				return list();
+			}
+			return todoRepository.findByTitleContainingIgnoreCaseOrderByCreatedAtDesc(trimmed);
+		}
+		return list();
+	}
+
 	@Transactional
 	public Todo create(CreateTodoRequest request) {
 		String description = request.description();

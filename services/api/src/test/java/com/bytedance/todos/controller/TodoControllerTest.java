@@ -260,4 +260,62 @@ class TodoControllerTest {
 				.andExpect(jsonPath("$.id").value(todo.getId()));
 	}
 
+	@Test
+	void searchTodosByTitle_singleMatch() throws Exception {
+		todoRepository.save(new Todo("准备培训"));
+		todoRepository.save(new Todo("培训报告"));
+		todoRepository.save(new Todo("代码 review"));
+
+		mockMvc.perform(get("/api/todos").param("title", "代码"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(1)))
+				.andExpect(jsonPath("$[0].title").value("代码 review"));
+	}
+
+	@Test
+	void searchTodosByTitle_caseInsensitiveAndOrderedByCreatedAtDesc() throws Exception {
+		todoRepository.save(new Todo("Prepare training"));
+		todoRepository.save(new Todo("TRAINING report"));
+
+		mockMvc.perform(get("/api/todos").param("title", "training"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(2)))
+				.andExpect(jsonPath("$[0].title").value("TRAINING report"))
+				.andExpect(jsonPath("$[1].title").value("Prepare training"));
+	}
+
+	@Test
+	void searchTodosByTitle_noMatchReturnsEmptyArray() throws Exception {
+		todoRepository.save(new Todo("任意标题"));
+
+		mockMvc.perform(get("/api/todos").param("title", "不存在关键词"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(0)));
+	}
+
+	@Test
+	void searchTodosByTitle_blankTitleFallsBackToFullList() throws Exception {
+		todoRepository.save(new Todo("任务一"));
+		todoRepository.save(new Todo("任务二"));
+
+		mockMvc.perform(get("/api/todos").param("title", "   "))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(2)));
+
+		mockMvc.perform(get("/api/todos"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(2)));
+	}
+
+	@Test
+	void searchTodosByTitle_noParamPreservesOriginalFullListBehavior() throws Exception {
+		todoRepository.save(new Todo("任务一"));
+		todoRepository.save(new Todo("任务二"));
+		todoRepository.save(new Todo("任务三"));
+
+		mockMvc.perform(get("/api/todos"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(3)));
+	}
+
 }
