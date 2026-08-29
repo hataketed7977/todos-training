@@ -11,7 +11,7 @@
 
 | 方法 | 路径 | 语义 | 成功 | 失败 |
 | --- | --- | --- | --- | --- |
-| GET | `/api/todos` | 列出全部 todo，按 `createdAt` 倒序 | 200，`List<Todo>` | — |
+| GET | `/api/todos` | 列出 todo（可选 `title` 查询参数：标题包含关键词且大小写不敏感），按 `createdAt` 倒序；无 `title` 参数时列出全部 | 200，`List<Todo>` | — |
 | POST | `/api/todos` | 创建 todo；新建项 `status` 固定为 `TODO` | 201，创建后的 `Todo` | 400 |
 | PUT | `/api/todos/{id}` | 更新指定 todo 的 `title`/`description`/`priority`；不修改 `status`；可选字段传 `null`/省略即清空 | 200，更新后的 `Todo` | 400、404 |
 | DELETE | `/api/todos/{id}` | 删除指定 todo | 204，无响应体 | 404 |
