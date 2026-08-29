@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "semi-mcp": {
+      "command": "npx",
+      "args": ["-y", "@ies/semi-mcp-bytedance"],
+      "env": {
+        "npm_config_registry": "https://bnpm.byted.org"
+      }
+    }
+  }
+}
