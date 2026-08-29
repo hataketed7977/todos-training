@@ -2,6 +2,7 @@ package com.bytedance.todos.controller;
 
 import com.bytedance.todos.repository.TodoRepository;
 import com.bytedance.todos.model.Todo;
+import com.bytedance.todos.model.TodoStatus;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -211,6 +212,52 @@ class TodoControllerTest {
 								}
 								"""))
 				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void updateShouldChangeStatusWhenProvided() throws Exception {
+		Todo todo = todoRepository.save(new Todo("旧标题", "旧描述", com.bytedance.todos.model.TodoPriority.LOW));
+
+		mockMvc.perform(put("/api/todos/" + todo.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "新标题",
+								  "description": null,
+								  "priority": null,
+								  "status": "DOING"
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.title").value("新标题"))
+				.andExpect(jsonPath("$.description").value(nullValue()))
+				.andExpect(jsonPath("$.priority").value(nullValue()))
+				.andExpect(jsonPath("$.status").value("DOING"))
+				.andExpect(jsonPath("$.id").value(todo.getId()));
+
+		Todo saved = todoRepository.findById(todo.getId()).orElseThrow();
+		assert saved.getStatus() == TodoStatus.DOING;
+	}
+
+	@Test
+	void updateShouldPreserveStatusWhenOmitted() throws Exception {
+		Todo todo = todoRepository.save(new Todo("旧标题", "旧描述", com.bytedance.todos.model.TodoPriority.LOW));
+		todo.setStatus(TodoStatus.DONE);
+		todo = todoRepository.save(todo);
+
+		mockMvc.perform(put("/api/todos/" + todo.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "新标题",
+								  "description": "新描述"
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.title").value("新标题"))
+				.andExpect(jsonPath("$.description").value("新描述"))
+				.andExpect(jsonPath("$.status").value("DONE"))
+				.andExpect(jsonPath("$.id").value(todo.getId()));
 	}
 
 }

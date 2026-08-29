@@ -91,6 +91,10 @@ public class Todo {
 		return status;
 	}
 
+	public void setStatus(TodoStatus status) {
+		this.status = status;
+	}
+
 	public Instant getCreatedAt() {
 		return createdAt;
 	}

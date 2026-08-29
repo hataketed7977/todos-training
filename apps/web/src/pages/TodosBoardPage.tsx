@@ -25,6 +25,7 @@ export function TodosBoardPage() {
     addTodo,
     removeTodo,
     editTodo,
+    moveTodo,
   } = useTodos()
 
   async function handleCreate(input: {
@@ -85,6 +86,8 @@ export function TodosBoardPage() {
           deleting={deleting}
           onEdit={(todo) => setEditingTodo(todo)}
           editing={updating}
+          onMove={moveTodo}
+          moving={updating}
         />
 
         <CreateTodoModal

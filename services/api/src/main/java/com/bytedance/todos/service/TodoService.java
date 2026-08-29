@@ -49,6 +49,9 @@ public class TodoService {
 		}
 		todo.setDescription(description);
 		todo.setPriority(request.priority());
+		if (request.status() != null) {
+			todo.setStatus(request.status());
+		}
 		return todoRepository.save(todo);
 	}
 

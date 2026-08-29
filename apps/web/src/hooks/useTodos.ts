@@ -136,6 +136,34 @@ export function useTodos() {
     }
   }
 
+  async function moveTodo(id: number, newStatus: TodoStatus) {
+    const original = todos.find(t => t.id === id)
+    if (!original) return
+
+    setTodos(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t))
+    setUpdating(prev => new Set(prev).add(id))
+    try {
+      await updateTodo(id, {
+        title: original.title,
+        description: original.description,
+        priority: original.priority,
+        status: newStatus,
+      })
+      setError(null)
+      Toast.success(i18n.saved)
+    } catch {
+      setError(i18n.editFailed)
+      Toast.error(i18n.editFailed)
+      await refreshTodos()
+    } finally {
+      setUpdating(prev => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
+  }
+
   return {
     todos,
     todosByStatus,
@@ -147,5 +175,6 @@ export function useTodos() {
     addTodo,
     removeTodo,
     editTodo,
+    moveTodo,
   }
 }

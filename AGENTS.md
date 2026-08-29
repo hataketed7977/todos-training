@@ -169,6 +169,7 @@ files 写到 `/tmp/todos-training/`；foreground 模式 Ctrl+C 只停止该 scri
 - 按 title 创建 todo，并可选择性填写描述和优先级。
 - 编辑已有 todo 的标题、描述和优先级。
 - 删除 todo（删除前二次确认）。
+- 通过拖拽卡片到另一列，修改 todo 的 status。
 - 在三个固定 status columns 中展示 todos。
 - 显示 total 和 per-status counts。
 
@@ -209,11 +210,12 @@ Todo priority 是固定的：
 
 当前 update rule：
 
-- Client 发送必填的 `title`，并可选择性发送 `description` 和 `priority`。
+- Client 发送必填的 `title`，并可选择性发送 `description`、`priority` 和 `status`。
 - Backend trim title；空白 title 校验失败。
 - Backend trim description；空白或未提供的 description 存为 `NULL`。
 - 未提供 `priority` 时存为 `NULL`（即清空已有优先级）。
-- Update 不修改 `status`。
+- 未提供 `status` 或 `status` 为 `NULL` 时，**保持**现有 status 不变（向后兼容）。
+- 提供合法 `status`（`TODO` / `DOING` / `DONE`）时，更新 todo 的 status。
 
 ## API 契约
 
@@ -246,8 +248,9 @@ DELETE /api/todos/{id}
 
 - `GET /api/todos` 返回 todo 列表，按 `createdAt` 倒序。
 - `POST /api/todos` 创建 todo，返回 201 和创建后的 todo。
-- `PUT /api/todos/{id}` 更新 todo 的 `title`、`description`、`priority`，
-  返回 200 和更新后的 todo；`id` 不存在时返回 404。Update 不修改 `status`。
+- `PUT /api/todos/{id}` 更新 todo 的 `title`、`description`、
+  `priority`、`status`，返回 200 和更新后的 todo；`id` 不存在时返回 404。
+  `status` 字段可选，省略或传 `null` 时保留现有 status。
 - `DELETE /api/todos/{id}` 删除 todo，返回 204 且无响应体；`id` 不存在时
   返回 404。
 
@@ -261,11 +264,24 @@ Create / Update request：
 }
 ```
 
+Update request 可额外携带可选的 `status` 字段：
+
+```json
+{
+  "title": "Prepare training",
+  "description": "准备培训材料和场地",
+  "priority": "HIGH",
+  "status": "DOING"
+}
+```
+
 `description` 和 `priority` 均为可选字段；`description` 最大 2000 字符，
-`priority` 取值为 `LOW`、`MEDIUM`、`HIGH`。空白 `title` 由 Bean Validation
-（`@NotBlank`）在 DTO 层拒绝；非法 `priority` 因枚举反序列化失败被拒绝；
-两者均返回 400。2000 字符长度限制当前由数据库列长度和前端输入框 maxCount
-保证，API DTO 层不校验长度。Update request 的请求体与 Create 形状相同。
+`priority` 取值为 `LOW`、`MEDIUM`、`HIGH`。`status` 仅对 Update 有效，
+取值为 `TODO`、`DOING`、`DONE`，省略或传 `null` 时保留现有 status（Create
+始终将 status 置为 `TODO`，不受请求体影响）。空白 `title` 由 Bean Validation
+（`@NotBlank`）在 DTO 层拒绝；非法 `priority` / `status` 因枚举反序列化失败
+被拒绝；两者均返回 400。2000 字符长度限制当前由数据库列长度和前端输入框
+maxCount 保证，API DTO 层不校验长度。
 
 Todo response（`GET` 列表元素、`POST`、`PUT` 均返回该形状）：
 
