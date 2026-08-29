@@ -1,9 +1,9 @@
 import Space from '@douyinfe/semi-ui/lib/es/space'
 import Tag from '@douyinfe/semi-ui/lib/es/tag'
 import Typography from '@douyinfe/semi-ui/lib/es/typography'
-import type { Todo } from '../types/todo'
-import { todoBoardColumns } from '../types/todoBoard'
-import { zhCN as i18n } from '../i18n/zhCN'
+import type { Todo } from '@typings/todo'
+import { todoBoardColumns } from '@typings/todoBoard'
+import { zhCN as i18n } from '@i18n/zhCN'
 
 const { Text, Title } = Typography
 const headerStatusTagStyle = {

@@ -2,8 +2,8 @@ import { useEffect, useRef } from 'react'
 import { Form } from '@douyinfe/semi-ui/lib/es/form'
 import type { FormApi } from '@douyinfe/semi-ui/lib/es/form'
 import Modal from '@douyinfe/semi-ui/lib/es/modal'
-import { zhCN as i18n } from '../i18n/zhCN'
-import type { Todo, TodoPriority } from '../types/todo'
+import { zhCN as i18n } from '@i18n/zhCN'
+import type { Todo, TodoPriority } from '@typings/todo'
 
 interface CreateTodoFormValues {
   title?: string

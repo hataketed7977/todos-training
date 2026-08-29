@@ -1,5 +1,5 @@
 import type { TodoStatus } from './todo'
-import { zhCN as i18n } from '../i18n/zhCN'
+import { zhCN as i18n } from '@i18n/zhCN'
 
 export interface TodoBoardColumn {
   status: TodoStatus

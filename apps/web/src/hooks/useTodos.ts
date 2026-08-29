@@ -5,10 +5,10 @@ import {
   deleteTodo,
   listTodos,
   updateTodo,
-} from '../services/todosService'
-import type { Todo, TodoPriority, TodoStatus } from '../types/todo'
-import { todoStatuses } from '../types/todo'
-import { zhCN as i18n } from '../i18n/zhCN'
+} from '@services/todosService'
+import type { Todo, TodoPriority, TodoStatus } from '@typings/todo'
+import { todoStatuses } from '@typings/todo'
+import { zhCN as i18n } from '@i18n/zhCN'
 
 export function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([])

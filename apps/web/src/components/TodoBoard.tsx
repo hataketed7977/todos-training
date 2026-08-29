@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import Skeleton from '@douyinfe/semi-ui/lib/es/skeleton'
 import { Col, Row } from '@douyinfe/semi-ui/lib/es/grid'
-import type { Todo, TodoStatus } from '../types/todo'
+import type { Todo, TodoStatus } from '@typings/todo'
 import { BoardColumn } from './BoardColumn'
-import { todoBoardColumns } from '../types/todoBoard'
+import { todoBoardColumns } from '@typings/todoBoard'
 import {
   DndContext,
   closestCenter,

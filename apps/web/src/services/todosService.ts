@@ -1,4 +1,4 @@
-import type { Todo, TodoPriority, TodoStatus } from '../types/todo'
+import type { Todo, TodoPriority, TodoStatus } from '@typings/todo'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:18080'
 

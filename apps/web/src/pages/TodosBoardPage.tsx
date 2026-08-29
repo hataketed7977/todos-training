@@ -2,11 +2,11 @@ import { useState } from 'react'
 import Card from '@douyinfe/semi-ui/lib/es/card'
 import Layout from '@douyinfe/semi-ui/lib/es/layout'
 import Typography from '@douyinfe/semi-ui/lib/es/typography'
-import { AppHeader } from '../components/AppHeader'
-import { CreateTodoModal } from '../components/CreateTodoModal'
-import { TodoBoard } from '../components/TodoBoard'
-import { useTodos } from '../hooks/useTodos'
-import type { Todo, TodoPriority } from '../types/todo'
+import { AppHeader } from '@components/AppHeader'
+import { CreateTodoModal } from '@components/CreateTodoModal'
+import { TodoBoard } from '@components/TodoBoard'
+import { useTodos } from '@hooks/useTodos'
+import type { Todo, TodoPriority } from '@typings/todo'
 
 const { Content } = Layout
 const { Text } = Typography
