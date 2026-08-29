@@ -1,5 +1,9 @@
 import type { Command } from 'commander'
 
+interface ExitCoded {
+  exitCode?: number
+}
+
 export async function runCli(
   program: Command,
   argv = process.argv,
@@ -8,7 +12,11 @@ export async function runCli(
   try {
     await program.parseAsync(argv)
   } catch (error: unknown) {
-    writeError(error instanceof Error ? error.message : String(error))
-    process.exitCode = 1
+    const coded = error as ExitCoded
+    const exitCode = coded.exitCode ?? 1
+    if (exitCode !== 0) {
+      writeError(error instanceof Error ? error.message : String(error))
+    }
+    process.exitCode = exitCode
   }
 }
