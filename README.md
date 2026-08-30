@@ -153,6 +153,79 @@ cd services/api
 ./gradlew test
 ```
 
+## 提交门禁 (Git Hooks)
+
+仓库携带两条本地 Git hook，拦截点和作用如下：
+
+| Hook | 触发时机 | 作用 |
+|---|---|---|
+| `commit-msg` | 提交时（写入提交信息后） | 校验提交信息首行符合 `type(scope): subject` 规范（与仓库现有提交历史一致） |
+| `pre-push` | 推送时（发送到远端前） | 只对本次推送改动到的业务模块运行 focused tests；没改到的模块不跑 |
+
+### 首次启用
+
+macOS / Linux：
+
+```bash
+./scripts/setup-hooks.sh
+```
+
+Windows PowerShell：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-hooks.ps1
+```
+
+该脚本会：
+1. 为 `.githooks/` 下的 hook 脚本补上可执行权限
+2. 设置当前仓库 `git config core.hooksPath .githooks`
+
+成功后每次 `git commit` / `git push` 会自动触发对应检查。
+
+### 校验规则速览
+
+**提交信息（commit-msg）**，首行格式：
+
+```
+<type>(<scope>): <subject>
+```
+
+- `type`: `feat` / `fix` / `docs` / `test` / `chore` / `spec`
+- `scope`: 建议 `todos` / `openspec` / `api` / `web` / `cli` / `trae`，可省略
+- `subject`: 以小写字母开头，不以句号结尾
+
+示例（摘自仓库现有历史）：
+
+```text
+feat(todos): add assignee field end-to-end across API / Web / CLI
+fix(api): handle null status in update request by keeping current status
+docs(cli): update AGENTS, architecture, testing for search command
+test(api): add ArchUnit layered architecture + entity suffix rules
+chore(trae): include .trae/mcp.json MCP server config
+```
+
+不规范时，hook 会逐项列出**哪条规则违反了**、当前提交的首行是什么，并给出允许的格式示例。
+
+**模块测试（pre-push）**，按推送涉及的文件路径映射：
+
+| 路径前缀 | 受影响模块 | 运行的 focused checks |
+|---|---|---|
+| `apps/web/**` | web | `pnpm build` |
+| `apps/cli/**` | cli | `pnpm build` + `pnpm test` |
+| `services/api/**` | api | `./gradlew test --rerun-tasks` |
+| 其他（根文档、skills、openspec 等） | — | 跳过，不跑模块测试 |
+
+如果某模块的命令失败，hook 会打印：**模块名、执行目录、完整命令、退出码**，以及失败日志的最后 40 行（完整日志保留在 `/tmp/todos-training-prepush-*/`）。
+
+### 紧急绕过
+
+仅在极少数紧急情况下使用（不推荐）：
+
+```bash
+git commit --no-verify   # 跳过 commit-msg
+git push --no-verify     # 跳过 pre-push
+```
+
 ## 项目形态
 
 ```text

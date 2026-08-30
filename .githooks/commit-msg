@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# commit-msg hook: 校验提交信息符合仓库 Conventional Commits 格式规范
+# 格式: <type>(<scope>): <subject>
+#   或   <type>: <subject>
+#
+# 失败退出码: 1
+
+set -euo pipefail
+
+COMMIT_MSG_FILE="$1"
+
+# 读取 commit message 第一行（去掉注释和空行）
+FIRST_LINE=$(grep -v '^#' "$COMMIT_MSG_FILE" | grep -v '^$' | head -n 1 || true)
+
+if [[ -z "$FIRST_LINE" ]]; then
+  echo "❌ 提交信息检查失败"
+  echo "   原因: 提交信息为空或全是注释/空行。"
+  echo "   期望格式: <type>(<scope>): <subject>  或  <type>: <subject>"
+  exit 1
+fi
+
+# 允许的 type 列表（从现有提交历史提取）
+ALLOWED_TYPES="feat|fix|docs|test|chore|spec"
+
+# 允许的 scope 列表（非强制，scope 可空，但指定时建议在此列表中）
+ALLOWED_SCOPES="todos|openspec|api|web|cli|trae"
+
+# 正则: type(scope): subject 或 type: subject
+# 约束:
+#   - type 必须在 ALLOWED_TYPES 中
+#   - scope 可选；若有 scope，必须包含在括号内，括号间无空格
+#   - 冒号后必须有一个空格
+#   - subject 首字母不能是大写字母（专有名词除外，但我们统一要求小写开头）
+#   - subject 非空，末尾不能是句号
+REGEX="^($ALLOWED_TYPES)(\(($ALLOWED_SCOPES|[a-zA-Z0-9_-]+)\))?: ([a-z].*[^.]|[a-z])$"
+
+if ! echo "$FIRST_LINE" | grep -qE "$REGEX"; then
+  echo "❌ 提交信息检查失败"
+  echo "   提交首行: \"$FIRST_LINE\""
+  echo ""
+
+  # 逐项诊断具体原因
+  DIAGNOSED=0
+
+  # 1. 检查 type 是否正确
+  TYPE_PART=$(echo "$FIRST_LINE" | sed -E 's/[:(].*//')
+  if [[ -z "$TYPE_PART" ]]; then
+    echo "   原因 1: 未识别到 <type>，应以 type 开头（feat/fix/docs/test/chore/spec 之一）"
+    DIAGNOSED=1
+  elif ! echo "$TYPE_PART" | grep -qE "^($ALLOWED_TYPES)$"; then
+    echo "   原因 1: type 不合法 -> \"$TYPE_PART\""
+    echo "           允许的 type: feat | fix | docs | test | chore | spec"
+    DIAGNOSED=1
+  fi
+
+  # 2. 检查 scope 格式
+  if echo "$FIRST_LINE" | grep -qE "^[^:]*\("; then
+    SCOPE_PART=$(echo "$FIRST_LINE" | sed -E 's/^[^(]*\(([^)]*)\).*/\1/')
+    if [[ "$FIRST_LINE" != *\(*\):* ]]; then
+      echo "   原因 2: scope 格式有误，应为 <type>(<scope>): <subject>（括号后紧跟冒号，无空格）"
+      DIAGNOSED=1
+    fi
+    if [[ -z "$SCOPE_PART" ]]; then
+      echo "   原因 2: scope 为空括号，或者去掉括号请直接写 <type>: <subject>"
+      DIAGNOSED=1
+    fi
+  fi
+
+  # 3. 冒号后必须有空格
+  if ! echo "$FIRST_LINE" | grep -qE "^[^:]+: .+"; then
+    echo "   原因 3: 冒号 \":\" 后必须有一个空格，然后是 subject"
+    DIAGNOSED=1
+  fi
+
+  # 4. subject 首字母必须小写（冒号空格之后第一个字符）
+  SUBJECT_PART=$(echo "$FIRST_LINE" | sed -E 's/^[^:]+: //')
+  if [[ "$SUBJECT_PART" != "$FIRST_LINE" ]] && [[ -n "$SUBJECT_PART" ]]; then
+    FIRST_CHAR="${SUBJECT_PART:0:1}"
+    if [[ "$FIRST_CHAR" =~ ^[A-Z]$ ]]; then
+      echo "   原因 4: subject 首字母必须小写，当前为大写 '$FIRST_CHAR'"
+      DIAGNOSED=1
+    fi
+  fi
+
+  # 5. subject 末尾不能有句号
+  if echo "$FIRST_LINE" | grep -qE '\.$'; then
+    echo "   原因 5: subject 末尾不能以句号 \".\" 结尾"
+    DIAGNOSED=1
+  fi
+
+  # 6. subject 非空校验
+  if [[ -z "$SUBJECT_PART" ]] || [[ "$SUBJECT_PART" == "$FIRST_LINE" ]]; then
+    echo "   原因 6: subject 不能为空（冒号后没有内容）"
+    DIAGNOSED=1
+  fi
+
+  if [[ $DIAGNOSED -eq 0 ]]; then
+    echo "   原因: 不符合预期的整体格式"
+  fi
+
+  echo ""
+  echo "   允许的格式示例（参考仓库现有提交历史）:"
+  echo "     feat(todos): add assignee field end-to-end across API / Web / CLI"
+  echo "     fix(api): handle null status in update request by keeping current status"
+  echo "     docs(cli): update AGENTS, architecture, testing for search command"
+  echo "     test(api): add ArchUnit layered architecture + entity suffix rules"
+  echo "     chore(trae): include .trae/mcp.json MCP server config"
+  echo "     spec(openspec): add spec-driven-tdd schema with per-module RED-GREEN-REFACTOR task skeleton"
+  echo ""
+  echo "   简要格式规则:"
+  echo "     type     = feat | fix | docs | test | chore | spec"
+  echo "     scope    = (可选) 建议: todos | openspec | api | web | cli | trae"
+  echo "     subject  = 以小写字母开头，不以句号结尾，概括本次变更"
+  exit 1
+fi
+
+# 首行长度建议
+MAX_LEN=100
+LEN=${#FIRST_LINE}
+if [[ $LEN -gt $MAX_LEN ]]; then
+  echo "⚠️  提交信息首行较长（${LEN}/${MAX_LEN} 字符），建议精简，但不拦截。"
+fi
+
+exit 0

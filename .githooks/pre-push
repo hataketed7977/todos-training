@@ -1,0 +1,221 @@
+#!/usr/bin/env bash
+# pre-push hook: 对本次推送涉及改动的模块，运行 focused tests
+# 改动判定：根据 stdin 传入的 local/remote SHA 计算 diff 文件
+# 模块映射（按路径前缀）：
+#   apps/web/     -> web  模块  -> pnpm build
+#   apps/cli/     -> cli  模块  -> pnpm build + pnpm test
+#   services/api/ -> api  模块  -> ./gradlew test --rerun-tasks
+# 其他路径（根文档、.trae、.agents、openspec 等）不关联特定模块，不跑模块测试
+#
+# 失败退出码: 1
+
+set -euo pipefail
+
+REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
+
+# ──────────────────────────────────────────────────────────────
+# 1. 计算本次推送涉及的全部改动文件
+#    支持 HOOK_TEST_CHANGED_FILES 环境变量注入（便于自测/CI 验证），
+#    否则按 pre-push stdin 的 commit range 计算 diff。
+# ──────────────────────────────────────────────────────────────
+ALL_CHANGED_FILES=""
+ZERO_SHA="0000000000000000000000000000000000000000"
+ANY_COMMIT_RANGE_FOUND=0
+
+if [[ -n "${HOOK_TEST_CHANGED_FILES:-}" ]]; then
+  ALL_CHANGED_FILES="$HOOK_TEST_CHANGED_FILES"
+  ANY_COMMIT_RANGE_FOUND=1
+else
+  while read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
+    [[ -z "${LOCAL_REF:-}" ]] && continue
+
+    ANY_COMMIT_RANGE_FOUND=1
+
+    if [[ "$LOCAL_SHA" == "$ZERO_SHA" ]]; then
+      # 删除分支，没有内容需要检查
+      continue
+    fi
+
+    # 确定 diff 范围
+    if [[ "$REMOTE_SHA" == "$ZERO_SHA" ]]; then
+      # 新建分支，尝试找 origin/main 作为基线
+      BASE_SHA=$(git merge-base "$LOCAL_SHA" origin/main 2>/dev/null || echo "")
+      if [[ -z "$BASE_SHA" ]]; then
+        # 回退：使用 HEAD~1 估算
+        BASE_SHA=$(git rev-parse "$LOCAL_SHA~1" 2>/dev/null || echo "")
+      fi
+      RANGE="${BASE_SHA:+$BASE_SHA..}$LOCAL_SHA"
+    else
+      RANGE="$REMOTE_SHA..$LOCAL_SHA"
+    fi
+
+    # 获取改动文件（含新增/修改/删除/重命名），每行一个路径
+    CHANGED=$(git diff --name-only "$RANGE" 2>/dev/null || echo "")
+    if [[ -n "$CHANGED" ]]; then
+      if [[ -n "$ALL_CHANGED_FILES" ]]; then
+        ALL_CHANGED_FILES="${ALL_CHANGED_FILES}
+${CHANGED}"
+      else
+        ALL_CHANGED_FILES="$CHANGED"
+      fi
+    fi
+
+  done < /dev/stdin
+
+  # 如果 stdin 没有任何内容（理论上 pre-push 一定会有），退化为对比工作区
+  if [[ $ANY_COMMIT_RANGE_FOUND -eq 0 ]]; then
+    ALL_CHANGED_FILES=$(git diff --name-only HEAD origin/main 2>/dev/null || git diff --name-only || echo "")
+  fi
+fi
+
+# 去重
+ALL_CHANGED_FILES=$(echo "$ALL_CHANGED_FILES" | sort -u | grep -v '^$' || true)
+
+if [[ -z "$ALL_CHANGED_FILES" ]]; then
+  echo "✅ pre-push: 未检测到改动文件，跳过模块测试。"
+  exit 0
+fi
+
+# ──────────────────────────────────────────────────────────────
+# 2. 按文件路径前缀映射到模块
+# ──────────────────────────────────────────────────────────────
+NEED_WEB=0
+NEED_CLI=0
+NEED_API=0
+
+echo "📁 本次推送涉及的文件:"
+while IFS= read -r F; do
+  echo "   - $F"
+  case "$F" in
+    apps/web/*)     NEED_WEB=1 ;;
+    apps/cli/*)     NEED_CLI=1 ;;
+    services/api/*) NEED_API=1 ;;
+  esac
+done <<< "$ALL_CHANGED_FILES"
+
+echo ""
+
+MODULE_COUNT=0
+[[ $NEED_WEB -eq 1 ]] && MODULE_COUNT=$((MODULE_COUNT + 1))
+[[ $NEED_CLI -eq 1 ]] && MODULE_COUNT=$((MODULE_COUNT + 1))
+[[ $NEED_API -eq 1 ]] && MODULE_COUNT=$((MODULE_COUNT + 1))
+
+if [[ $MODULE_COUNT -eq 0 ]]; then
+  echo "✅ pre-push: 改动文件不涉及 web/cli/api 业务模块，跳过模块测试。"
+  echo "   （改动可能是文档、skills、openspec 配置等，无需运行模块测试）"
+  exit 0
+fi
+
+echo "🧪 检测到 $MODULE_COUNT 个受影响的业务模块，开始运行 focused checks..."
+echo ""
+
+# ──────────────────────────────────────────────────────────────
+# 3. 执行各模块测试命令，失败时说清原因
+# ──────────────────────────────────────────────────────────────
+
+# 临时日志目录
+LOG_DIR=$(mktemp -d /tmp/todos-training-prepush-XXXXXX)
+trap 'rm -rf "$LOG_DIR"' EXIT
+
+FAILURES=0
+
+run_check() {
+  local MODULE="$1"
+  local MODULE_DIR="$2"
+  shift 2
+  local CMD=("$@")
+
+  local SAFE_NAME
+  SAFE_NAME=$(echo "$MODULE" | tr ':' '_')
+  local LOG_FILE_PATH="$LOG_DIR/${SAFE_NAME}.log"
+  echo "▶ [$MODULE] 进入目录: $MODULE_DIR"
+  echo "  执行命令: ${CMD[*]}"
+
+  local START_TS
+  START_TS=$(date +%s)
+  local CMD_EXIT=0
+
+  # 捕获 stdout + stderr 到日志文件
+  ( cd "$MODULE_DIR" && "${CMD[@]}" ) > "$LOG_FILE_PATH" 2>&1 || CMD_EXIT=$?
+
+  local ELAPSED=$(( $(date +%s) - START_TS ))
+
+  if [[ $CMD_EXIT -eq 0 ]]; then
+    echo "✅ [$MODULE] 通过（耗时 ${ELAPSED}s）"
+    echo ""
+    return 0
+  else
+    echo "❌ [$MODULE] 失败（耗时 ${ELAPSED}s）"
+    echo "   拦截原因: 命令返回非 0 退出码 $CMD_EXIT"
+    echo "   执行目录: $MODULE_DIR"
+    echo "   执行命令: ${CMD[*]}"
+    echo "   退出码: $CMD_EXIT"
+    echo "   失败日志（最后 40 行，完整日志保留在 ${LOG_FILE_PATH}）:"
+    echo "   ──────────────────────────────────────────────"
+    if [[ -f "$LOG_FILE_PATH" ]]; then
+      tail -n 40 "$LOG_FILE_PATH" 2>/dev/null | awk '{print "   " $0}' || true
+    else
+      echo "   (未生成日志文件)"
+    fi
+    echo "   ──────────────────────────────────────────────"
+    echo ""
+    return 1
+  fi
+}
+
+# ── web 模块: pnpm build ──
+if [[ $NEED_WEB -eq 1 ]]; then
+  if [[ ! -d "$REPO_ROOT/apps/web/node_modules" ]]; then
+    echo "ℹ️  [web] 检测到 node_modules 缺失，先执行 pnpm install..."
+    if ! run_check "web:install" "$REPO_ROOT/apps/web" pnpm install; then
+      FAILURES=$((FAILURES + 1))
+    fi
+  fi
+  if [[ $FAILURES -eq 0 ]]; then
+    if ! run_check "web" "$REPO_ROOT/apps/web" pnpm build; then
+      FAILURES=$((FAILURES + 1))
+    fi
+  fi
+fi
+
+# ── cli 模块: pnpm build + pnpm test ──
+if [[ $NEED_CLI -eq 1 ]]; then
+  if [[ ! -d "$REPO_ROOT/apps/cli/node_modules" ]]; then
+    echo "ℹ️  [cli] 检测到 node_modules 缺失，先执行 pnpm install..."
+    if ! run_check "cli:install" "$REPO_ROOT/apps/cli" pnpm install; then
+      FAILURES=$((FAILURES + 1))
+    fi
+  fi
+  if [[ $FAILURES -eq 0 ]]; then
+    # pnpm test 内部会先 build，所以只跑 test 即可覆盖 build
+    # 但 cli focused check 明确要求 build + test，两者都跑确保一致
+    if ! run_check "cli:build" "$REPO_ROOT/apps/cli" pnpm build; then
+      FAILURES=$((FAILURES + 1))
+    fi
+  fi
+  if [[ $FAILURES -eq 0 ]]; then
+    if ! run_check "cli:test" "$REPO_ROOT/apps/cli" pnpm test; then
+      FAILURES=$((FAILURES + 1))
+    fi
+  fi
+fi
+
+# ── api 模块: ./gradlew test --rerun-tasks ──
+if [[ $NEED_API -eq 1 ]]; then
+  if ! run_check "api" "$REPO_ROOT/services/api" ./gradlew test --rerun-tasks; then
+    FAILURES=$((FAILURES + 1))
+  fi
+fi
+
+# ──────────────────────────────────────────────────────────────
+# 4. 汇总
+# ──────────────────────────────────────────────────────────────
+if [[ $FAILURES -eq 0 ]]; then
+  echo "🎉 pre-push: 全部 $MODULE_COUNT 个受影响模块的 focused checks 通过。"
+  exit 0
+else
+  echo "🚫 pre-push 被拦截: $FAILURES 个模块的 focused checks 未通过。"
+  echo "   请修复对应模块的错误后再推送。"
+  echo "   临时绕过（仅紧急情况，不推荐）: git push --no-verify"
+  exit 1
+fi
