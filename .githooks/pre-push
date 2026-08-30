@@ -4,7 +4,7 @@
 # 模块映射（按路径前缀）：
 #   apps/web/     -> web  模块  -> pnpm build
 #   apps/cli/     -> cli  模块  -> pnpm build + pnpm test
-#   services/api/ -> api  模块  -> ./gradlew test --rerun-tasks
+#   services/api/ -> api  模块  -> ./gradlew check --rerun-tasks
 # 其他路径（根文档、.trae、.agents、openspec 等）不关联特定模块，不跑模块测试
 #
 # 失败退出码: 1
@@ -132,7 +132,7 @@ echo "🧪 检测到 $MODULE_COUNT 个受影响的业务模块，开始运行 fo
 # 心理预期提示：避免用户把长时间的模块测试误解为"卡住"
 HINT_LINES=0
 if [[ $NEED_API -eq 1 ]]; then
-  echo "ℹ️  包含 api 模块：Gradle test --rerun-tasks 在首次/冷缓存下通常需要 1~3 分钟，属正常情况，请耐心等待…"
+  echo "ℹ️  包含 api 模块：Gradle check --rerun-tasks 在首次/冷缓存下通常需要 1~3 分钟，属正常情况，请耐心等待…"
   HINT_LINES=$((HINT_LINES + 1))
 fi
 if [[ $MODULE_COUNT -ge 2 ]]; then
@@ -232,9 +232,9 @@ if [[ $NEED_CLI -eq 1 ]]; then
   fi
 fi
 
-# ── api 模块: ./gradlew test --rerun-tasks ──
+# ── api 模块: ./gradlew check --rerun-tasks ──
 if [[ $NEED_API -eq 1 ]]; then
-  if ! run_check "api" "$REPO_ROOT/services/api" ./gradlew test --rerun-tasks; then
+  if ! run_check "api" "$REPO_ROOT/services/api" ./gradlew check --rerun-tasks; then
     FAILURES=$((FAILURES + 1))
   fi
 fi
