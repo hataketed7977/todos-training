@@ -127,14 +127,39 @@ function Check-Java-Version {
         return $true
     }
 
-    $JavaText = (& java -version 2>&1 | Select-Object -First 1) -join ""
+    $RawText = ""
+    try {
+        $RawText = (& java --version 2>&1 | ForEach-Object { $_.ToString() }) -join "`n"
+    } catch {
+        $RawText = ""
+    }
+    if (-not $RawText) {
+        try {
+            $RawText = (& java -version 2>&1 | ForEach-Object { $_.ToString() }) -join "`n"
+        } catch {
+            $RawText = ""
+        }
+    }
+
+    if (-not $RawText) {
+        Write-Fail "Cannot read Java version output; expected >= 21"
+        return $false
+    }
+
     $Version = $null
-    if ($JavaText -match 'version "([^"]+)"') {
+    if ($RawText -match 'version\s+"([^"]+)"') {
+        $Version = $Matches[1]
+    }
+    if (-not $Version -and ($RawText -match 'java\s+(1\.[0-9]+|[0-9][0-9._]*)')) {
+        $Version = $Matches[1]
+    }
+    if (-not $Version -and ($RawText -match 'openjdk\s+(1\.[0-9]+|[0-9][0-9._]*)')) {
         $Version = $Matches[1]
     }
 
     if (-not $Version) {
-        Write-Fail "Cannot parse Java version: $JavaText; expected >= 21"
+        $FirstLine = ($RawText -split "`n")[0]
+        Write-Fail "Cannot parse Java version: $FirstLine; expected >= 21"
         return $false
     }
 
@@ -146,7 +171,8 @@ function Check-Java-Version {
     }
 
     if (-not $Major) {
-        Write-Fail "Cannot parse Java version: $JavaText; expected >= 21"
+        $FirstLine = ($RawText -split "`n")[0]
+        Write-Fail "Cannot parse Java version: $FirstLine; expected >= 21"
         return $false
     }
 
@@ -202,33 +228,123 @@ function Test-Port($HostName, $Port) {
     }
 }
 
-function Wait-For-Port($HostName, $Port, $Label, $MaxSeconds) {
+function Write-Log-Tail($LogFile, $MaxLines) {
+    if (-not $LogFile -or -not (Test-Path $LogFile)) {
+        return
+    }
+    try {
+        $Fs = [System.IO.File]::Open($LogFile, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+        try {
+            $Reader = New-Object System.IO.StreamReader($Fs)
+            $AllLines = New-Object System.Collections.Generic.List[string]
+            while ($null -ne ($Line = $Reader.ReadLine())) {
+                $AllLines.Add($Line)
+            }
+            $Count = $AllLines.Count
+            $Start = [Math]::Max(0, $Count - $MaxLines)
+            for ($i = $Start; $i -lt $Count; $i++) {
+                if ($AllLines[$i]) {
+                    Write-Host "         $($AllLines[$i])" -ForegroundColor DarkGray
+                }
+            }
+        } finally {
+            if ($Reader) { $Reader.Dispose() }
+            $Fs.Dispose()
+        }
+    } catch {}
+}
+
+function Disable-PowerShell-WebProxy {
+    try {
+        [System.Net.WebRequest]::DefaultWebProxy = [System.Net.GlobalProxySelection]::GetEmptyWebProxy()
+    } catch {
+        try { [System.Net.WebRequest]::DefaultWebProxy = $null } catch {}
+    }
+    $env:NO_PROXY = "localhost,127.0.0.1,::1"
+    $env:no_proxy = "localhost,127.0.0.1,::1"
+}
+
+function Wait-For-Port($HostName, $Port, $Label, $MaxSeconds, $LogFile = $null) {
     $Elapsed = 0
+    $TickCount = 0
     while ($Elapsed -lt $MaxSeconds) {
         if (Test-Port $HostName $Port) {
-            Write-Success "$Label is ready ($HostName`:$Port)"
-            return
+            Write-Host ""
+            Write-Success "$Label port is open ($HostName`:$Port)"
+            return $true
+        }
+        $TickCount++
+        Write-Host "." -NoNewline -ForegroundColor Gray
+        if ($TickCount % 5 -eq 0) {
+            Write-Host " ${Elapsed}s" -ForegroundColor DarkGray
+            if ($TickCount % 15 -eq 0 -and $LogFile) {
+                Write-Host "       [$(Split-Path $LogFile -Leaf) tail]:" -ForegroundColor DarkCyan
+                Write-Log-Tail $LogFile 5
+            }
         }
         Start-Sleep -Seconds 2
         $Elapsed += 2
     }
 
-    throw "$Label did not become ready in ${MaxSeconds}s ($HostName`:$Port)"
+    Write-Host ""
+    if ($LogFile) {
+        Write-Warn "$Label port not open after ${Elapsed}s; last 30 lines of $(Split-Path $LogFile -Leaf):"
+        Write-Log-Tail $LogFile 30
+    }
+    throw "$Label port did not open in ${MaxSeconds}s ($HostName`:$Port)"
 }
 
-function Wait-For-Http($Url, $Label, $MaxSeconds) {
+function Wait-For-Http($Url, $Label, $MaxSeconds, $LogFile = $null, $PortOpenHint = $false) {
+    Disable-PowerShell-WebProxy
     $Elapsed = 0
+    $TickCount = 0
+    $HttpFailSincePortOpen = 0
     while ($Elapsed -lt $MaxSeconds) {
         try {
-            Invoke-WebRequest -UseBasicParsing -Uri $Url -TimeoutSec 5 | Out-Null
-            Write-Success "$Label is ready ($Url)"
-            return
+            $Req = Invoke-WebRequest -UseBasicParsing -Uri $Url -TimeoutSec 5
+            if ($Req.StatusCode -ge 200 -and $Req.StatusCode -lt 400) {
+                if ($TickCount -gt 0) { Write-Host "" }
+                Write-Success "$Label is ready ($Url)"
+                return $true
+            }
         } catch {
-            Start-Sleep -Seconds 2
-            $Elapsed += 2
+            $Ex = $_.Exception
         }
+        $TickCount++
+        if ($PortOpenHint) { $HttpFailSincePortOpen += 2 }
+        Write-Host "." -NoNewline -ForegroundColor Gray
+        if ($TickCount % 5 -eq 0) {
+            Write-Host " ${Elapsed}s" -ForegroundColor DarkGray
+            if ($TickCount % 15 -eq 0) {
+                if ($LogFile) {
+                    Write-Host "       [$(Split-Path $LogFile -Leaf) tail]:" -ForegroundColor DarkCyan
+                    Write-Log-Tail $LogFile 5
+                }
+                if ($PortOpenHint -and $HttpFailSincePortOpen -ge 30) {
+                    Write-Host ""
+                    try {
+                        $Uri = [Uri]$Url
+                        $Authority = if ($Uri.IsDefaultPort) { $Uri.Host } else { "$($Uri.Host):$($Uri.Port)" }
+                    } catch { $Authority = $Url }
+                    Write-Warn "PORT IS LISTENING BUT HTTP KEEPS FAILING — POSSIBLE POWERSHELL PROXY ISSUE."
+                    Write-Host "       Diagnose: run these commands in another PowerShell window and compare:"
+                    Write-Host "         1) Test-NetConnection -ComputerName $($Uri.Host) -Port $($Uri.Port)   <- should TcpTestSucceeded : True"
+                    Write-Host "         2) curl.exe -s -o nul -w '%{http_code}' '$Url'   <- should print 200 (native curl.exe bypasses PowerShell proxy)"
+                    Write-Host "         3) [System.Net.WebRequest]::DefaultWebProxy = `$null; (Invoke-WebRequest -UseBasicParsing '$Url').StatusCode"
+                    Write-Host "       If (2) returns 200 but (3) throws, your WinINET/IE system proxy is routing localhost through a corporate proxy — disable it in Internet Options -> Connections -> LAN settings."
+                    $HttpFailSincePortOpen = 0
+                }
+            }
+        }
+        Start-Sleep -Seconds 2
+        $Elapsed += 2
     }
 
+    Write-Host ""
+    if ($LogFile) {
+        Write-Warn "$Label not ready yet after ${Elapsed}s; last 30 lines of $(Split-Path $LogFile -Leaf):"
+        Write-Log-Tail $LogFile 30
+    }
     throw "$Label did not become ready in ${MaxSeconds}s ($Url)"
 }
 
@@ -406,16 +522,30 @@ function Start-Services {
     Force-Take-Over-Port $WebPort "web" $WebPidFile
     Reset-Database
 
-    $GradleCommand = if (Test-Path (Join-Path $ApiDir "gradlew.bat")) { ".\gradlew.bat bootRun" } else { ".\gradlew bootRun" }
+    $GradleOpts = "-Dorg.gradle.internal.http.socketTimeout=120000 -Dorg.gradle.internal.http.connectionTimeout=120000"
+    if ($env:GRADLE_OPTS) { $GradleOpts = "$env:GRADLE_OPTS $GradleOpts" }
+
+    $ApiEnv = @(
+        "set `"SERVER_PORT=$ApiPort`"",
+        "set `"CORS_ALLOWED_ORIGIN=http://localhost:$WebPort`"",
+        "set `"GRADLE_OPTS=$GradleOpts`""
+    )
+    if ($env:JAVA_HOME) { $ApiEnv += "set `"JAVA_HOME=$env:JAVA_HOME`"" }
+
+    $GradleCommand = if (Test-Path (Join-Path $ApiDir "gradlew.bat")) { ".\gradlew.bat bootRun --console=plain" } else { ".\gradlew bootRun --console=plain" }
     Start-Service-Process `
         "api" `
         $ApiDir `
         $ApiLog `
         $ApiPidFile `
-        @("set `"SERVER_PORT=$ApiPort`"", "set `"CORS_ALLOWED_ORIGIN=http://localhost:$WebPort`"") `
+        $ApiEnv `
         $GradleCommand
 
-    Wait-For-Http "$ApiBaseUrl/api/todos" "api" 120
+    try { $ApiHost = ([Uri]$ApiBaseUrl).Host } catch { $ApiHost = "localhost" }
+    Write-Info "Waiting for API port $ApiHost`:$ApiPort to open..."
+    Wait-For-Port $ApiHost $ApiPort "api" 120 $ApiLog
+    Write-Info "API port open; waiting for HTTP readiness at $ApiBaseUrl/api/todos..."
+    Wait-For-Http "$ApiBaseUrl/api/todos" "api" 60 $ApiLog $true
 
     Start-Service-Process `
         "web" `
@@ -425,7 +555,10 @@ function Start-Services {
         @("set `"VITE_API_BASE_URL=$ApiBaseUrl`"", "set `"WEB_PORT=$WebPort`"") `
         "pnpm dev"
 
-    Wait-For-Http "http://localhost:$WebPort" "web" 60
+    Write-Info "Waiting for Web port localhost`:$WebPort to open..."
+    Wait-For-Port "localhost" $WebPort "web" 60 $WebLog
+    Write-Info "Web port open; waiting for HTTP readiness at http://localhost:$WebPort..."
+    Wait-For-Http "http://localhost:$WebPort" "web" 30 $WebLog $true
 }
 
 function Print-Success-Summary {
@@ -493,6 +626,7 @@ function Supervise-Foreground {
 
 function Main {
     Parse-Args @args
+    Disable-PowerShell-WebProxy
     Write-Header
 
     try {
