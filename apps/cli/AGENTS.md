@@ -35,8 +35,8 @@
 
 ```bash
 todos-cli --help
-todos-cli create <title> [-d <description>] [-p LOW|MEDIUM|HIGH]   # 创建 todo（默认连接 http://localhost:18080）
-todos-cli search <keyword>                                          # 按标题搜索 todos
+todos-cli create <title> [-d <description>] [-p LOW|MEDIUM|HIGH] [-a <assignee>]   # 创建 todo（默认连接 http://localhost:18080）
+todos-cli search <keyword>                                                          # 按标题搜索 todos，输出表格含 ASSIGNEE 列，空值显示 '-'
 todos-cli --api-url http://x:y create <title>
 todos-cli --api-url http://x:y search <keyword>
 ```

@@ -13,7 +13,7 @@
 | --- | --- | --- | --- | --- |
 | GET | `/api/todos` | 列出 todo（可选 `title` 查询参数：标题包含关键词且大小写不敏感），按 `createdAt` 倒序；无 `title` 参数时列出全部 | 200，`List<Todo>` | — |
 | POST | `/api/todos` | 创建 todo；新建项 `status` 固定为 `TODO` | 201，创建后的 `Todo` | 400 |
-| PUT | `/api/todos/{id}` | 更新指定 todo 的 `title`/`description`/`priority`；不修改 `status`；可选字段传 `null`/省略即清空 | 200，更新后的 `Todo` | 400、404 |
+| PUT | `/api/todos/{id}` | 更新指定 todo 的 `title`/`description`/`priority`/`assignee`；可选 `status` 字段留空则不变；其他可选字段传 `null`/省略即清空 | 200，更新后的 `Todo` | 400、404 |
 | DELETE | `/api/todos/{id}` | 删除指定 todo | 204，无响应体 | 404 |
 
 印证：四个方法映射在 `src/main/java/com/bytedance/todos/controller/TodoController.java:29-50`；
@@ -25,7 +25,7 @@
 - 请求字段：`src/main/java/com/bytedance/todos/dto/CreateTodoRequest.java`、
   `src/main/java/com/bytedance/todos/dto/UpdateTodoRequest.java`（两个 record
   字段同形）。
-- 响应字段：`src/main/java/com/bytedance/todos/model/Todo.java` 的 getter
+- 响应字段：`src/main/java/com/bytedance/todos/model/TodoEntity.java` 的 getter
   序列化为 JSON（见第 4 节）。
 - 枚举取值：`src/main/java/com/bytedance/todos/model/TodoStatus.java`、
   `src/main/java/com/bytedance/todos/model/TodoPriority.java`。
@@ -87,9 +87,10 @@
   `null`；给 `Todo` 增加 getter 会在不改 controller 的情况下改变响应形状，
   新增持久化字段前必须先确认它是否应出现在 API 响应中。
 - 更新端点的请求体与创建同形（两个 DTO 字段一致），PUT 是整体提交语义：
-  可选字段未传或为 `null` 时按“清空”落库（`TodoService.java:50-51` 直接用
+  可选字段未传或为 `null` 时按“清空”落库（`TodoService.java:46-52` 直接用
   请求值覆盖；清空行为有测试钉住，
-  `src/test/java/com/bytedance/todos/controller/TodoControllerTest.java:172-188`）。
+  `src/test/java/com/bytedance/todos/controller/TodoControllerTest.java:172-188`
+  及 assignee 系列用例 `TodoControllerTest.java:323-454`）。
 
 ## 5. 错误表达
 

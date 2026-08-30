@@ -51,6 +51,7 @@ export function useTodos() {
     title: string
     description?: string | null
     priority?: TodoPriority | null
+    assignee?: string | null
   }) {
     const trimmedTitle = input.title.trim()
     if (!trimmedTitle) {
@@ -66,6 +67,7 @@ export function useTodos() {
         title: trimmedTitle,
         description,
         priority: input.priority ?? null,
+        assignee: input.assignee,
       })
       setTodos((current) => [todo, ...current])
       setError(null)
@@ -104,6 +106,7 @@ export function useTodos() {
       title: string
       description?: string | null
       priority?: TodoPriority | null
+      assignee?: string | null
     },
   ) {
     const trimmedTitle = input.title.trim()
@@ -119,6 +122,7 @@ export function useTodos() {
         title: trimmedTitle,
         description,
         priority: input.priority ?? null,
+        assignee: input.assignee,
       })
       setTodos(prev => prev.map(t => (t.id === id ? updated : t)))
       setError(null)
@@ -147,6 +151,7 @@ export function useTodos() {
         title: original.title,
         description: original.description,
         priority: original.priority,
+        assignee: original.assignee,
         status: newStatus,
       })
       setError(null)

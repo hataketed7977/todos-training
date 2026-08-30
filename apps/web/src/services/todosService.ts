@@ -30,6 +30,7 @@ export function createTodo(input: {
   title: string
   description?: string | null
   priority?: TodoPriority | null
+  assignee?: string | null
 }): Promise<Todo> {
   return request<Todo>('/api/todos', {
     method: 'POST',
@@ -49,6 +50,7 @@ export function updateTodo(
     title: string
     description?: string | null
     priority?: TodoPriority | null
+    assignee?: string | null
     status?: TodoStatus | null
   },
 ): Promise<Todo> {

@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 public record CreateTodoRequest(
 		@NotBlank String title,
 		String description,
-		TodoPriority priority
+		TodoPriority priority,
+		String assignee
 ) {
 }

@@ -37,14 +37,17 @@ public class TodoService {
 
 	@Transactional
 	public TodoEntity create(CreateTodoRequest request) {
-		String description = request.description();
-		if (description != null) {
-			description = description.trim();
-			if (description.isBlank()) {
-				description = null;
-			}
+		String description = normalizeBlankToNull(request.description());
+		String assignee = normalizeBlankToNull(request.assignee());
+		return todoRepository.save(new TodoEntity(request.title().trim(), description, request.priority(), assignee));
+	}
+
+	private static String normalizeBlankToNull(String value) {
+		if (value == null) {
+			return null;
 		}
-		return todoRepository.save(new TodoEntity(request.title().trim(), description, request.priority()));
+		String trimmed = value.trim();
+		return trimmed.isEmpty() ? null : trimmed;
 	}
 
 	@Transactional
@@ -52,15 +55,10 @@ public class TodoService {
 		TodoEntity todo = todoRepository.findById(id)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Todo not found: " + id));
 		todo.setTitle(request.title().trim());
-		String description = request.description();
-		if (description != null) {
-			description = description.trim();
-			if (description.isBlank()) {
-				description = null;
-			}
-		}
-		todo.setDescription(description);
+		todo.setDescription(normalizeBlankToNull(request.description()));
 		todo.setPriority(request.priority());
+		// assignee 与 priority 同派：不传/空白/null 一律清空
+		todo.setAssignee(normalizeBlankToNull(request.assignee()));
 		if (request.status() != null) {
 			todo.setStatus(request.status());
 		}

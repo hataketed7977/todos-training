@@ -8,6 +8,7 @@ public record UpdateTodoRequest(
 		@NotBlank String title,
 		String description,
 		TodoPriority priority,
-		TodoStatus status
+		TodoStatus status,
+		String assignee
 ) {
 }

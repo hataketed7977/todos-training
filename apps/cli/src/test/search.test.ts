@@ -123,3 +123,48 @@ test('search command respects custom --api-url and encodes title', async () => {
   )
   assert.equal(process.exitCode, 0)
 })
+
+// ===== assignee 新增用例（TDD RED-GREEN）=====
+// 预期 RED：search 表格列未加 ASSIGNEE，导致表格行不包含 assignee 显示值的正则匹配失败。
+
+test('assignee: search table shows ASSIGNEE column with value when present', async () => {
+  process.exitCode = 0
+  const fetchImpl: FetchLike = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => [
+      { id: 1, title: '任务X', status: 'TODO', priority: null, description: null, assignee: '张三', createdAt: '', updatedAt: '' },
+    ],
+  })
+  const program = makeProgramWithFetch(fetchImpl)
+  const out: string[] = []
+  const err: string[] = []
+  program.configureOutput({ writeOut: s => out.push(s), writeErr: s => err.push(s) })
+
+  await runCli(program, ['node', 'todos-cli', 'search', 'X'], m => err.push(m))
+  const output = out.join('')
+  // 表格必须包含 ASSIGNEE 表头，以及对应行的 "张三" 列值
+  assert.match(output, /\bASSIGNEE\b/)
+  assert.match(output, /\b1\b.*TODO.*-.*张三.*任务X/)
+  assert.equal(process.exitCode, 0)
+})
+
+test('assignee: search table ASSIGNEE column renders hyphen when null', async () => {
+  process.exitCode = 0
+  const fetchImpl: FetchLike = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => [
+      { id: 1, title: '任务X', status: 'TODO', priority: 'HIGH', description: null, assignee: null, createdAt: '', updatedAt: '' },
+    ],
+  })
+  const program = makeProgramWithFetch(fetchImpl)
+  const out: string[] = []
+  const err: string[] = []
+  program.configureOutput({ writeOut: s => out.push(s), writeErr: s => err.push(s) })
+
+  await runCli(program, ['node', 'todos-cli', 'search', 'X'], m => err.push(m))
+  const output = out.join('')
+  assert.match(output, /\b1\b.*TODO.*HIGH.*-.*任务X/)
+  assert.equal(process.exitCode, 0)
+})

@@ -30,6 +30,9 @@ public class TodoEntity {
 	@Enumerated(EnumType.STRING)
 	private TodoPriority priority;
 
+	@Column(length = 255)
+	private String assignee;
+
 	private Instant createdAt;
 
 	private Instant updatedAt;
@@ -38,13 +41,18 @@ public class TodoEntity {
 	}
 
 	public TodoEntity(String title) {
-		this(title, null, null);
+		this(title, null, null, null);
 	}
 
 	public TodoEntity(String title, String description, TodoPriority priority) {
+		this(title, description, priority, null);
+	}
+
+	public TodoEntity(String title, String description, TodoPriority priority, String assignee) {
 		this.title = title;
 		this.description = description;
 		this.priority = priority;
+		this.assignee = assignee;
 	}
 
 	@PrePersist
@@ -85,6 +93,14 @@ public class TodoEntity {
 
 	public void setPriority(TodoPriority priority) {
 		this.priority = priority;
+	}
+
+	public String getAssignee() {
+		return assignee;
+	}
+
+	public void setAssignee(String assignee) {
+		this.assignee = assignee;
 	}
 
 	public TodoStatus getStatus() {

@@ -63,6 +63,11 @@ export function TodoCard({ todo, onDelete, deleting, onEdit, editing, moving }: 
                 {i18n.todoPriority}：{priorityLabels[todo.priority]}
               </Text>
             ) : null}
+            {todo.assignee ? (
+              <Text type="tertiary" size="small" style={{ display: 'block', marginTop: 4 }}>
+                {i18n.todoAssignee}：{todo.assignee}
+              </Text>
+            ) : null}
             {todo.description ? (
               <Paragraph
                 type="tertiary"

@@ -27,6 +27,7 @@ export interface Todo {
   status: TodoStatus
   priority: Priority | null
   description: string | null
+  assignee: string | null
   createdAt: string
   updatedAt: string
 }
@@ -85,12 +86,14 @@ export async function createTodo({
   title,
   description,
   priority,
+  assignee,
   fetchImpl = globalThis.fetch as FetchLike,
 }: {
   apiUrl: string
   title: string
   description?: string
   priority?: Priority
+  assignee?: string
   fetchImpl?: FetchLike
 }): Promise<Todo> {
   const url = `${apiUrl.replace(/\/$/, '')}/api/todos`
@@ -100,6 +103,9 @@ export async function createTodo({
   }
   if (priority !== undefined) {
     body.priority = priority
+  }
+  if (assignee !== undefined) {
+    body.assignee = assignee
   }
   const res = await fetchImpl(url, {
     method: 'POST',

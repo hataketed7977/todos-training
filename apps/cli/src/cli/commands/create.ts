@@ -61,7 +61,8 @@ export function registerCreateCommand(program: Command, options: RegisterCreateO
     .description('创建新 todo')
     .option('-d, --description <text>', '任务描述')
     .option('-p, --priority <level>', `优先级：LOW | MEDIUM | HIGH（大小写均可）`)
-    .action(async (title: string, opts: { description?: string; priority?: string }) => {
+    .option('-a, --assignee <name>', '负责人名称')
+    .action(async (title: string, opts: { description?: string; priority?: string; assignee?: string }) => {
       const rawApiUrl = program.getOptionValue('apiUrl')
       const { writeOut, writeErr } = outputChannel(program)
 
@@ -88,6 +89,7 @@ export function registerCreateCommand(program: Command, options: RegisterCreateO
           title,
           description: opts.description,
           priority,
+          assignee: opts.assignee,
           fetchImpl: options.fetchImpl,
         })
 
@@ -96,6 +98,7 @@ export function registerCreateCommand(program: Command, options: RegisterCreateO
         writeOut(`  Title:       ${todo.title}\n`)
         writeOut(`  Status:      ${todo.status}\n`)
         writeOut(`  Priority:    ${todo.priority ?? '-'}\n`)
+        writeOut(`  Assignee:    ${todo.assignee ?? '-'}\n`)
         writeOut(`  Description: ${todo.description ?? '-'}\n`)
         writeOut(`  Created At:  ${todo.createdAt}\n`)
       } catch (err: unknown) {

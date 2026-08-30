@@ -78,19 +78,21 @@
 - Cards 按 API 返回的 `status` 分组。
 - add button 只出现在 `待处理` column。
 - 创建和编辑 todo 使用同一个 Semi Modal；Modal 包含一个必填 title input，以及
-  非必填的描述多行输入和优先级下拉选择，编辑模式下表单预填当前 todo 的值。
+  非必填的描述多行输入、优先级下拉选择、负责人单行输入，编辑模式下表单预填
+  当前 todo 的值。
 - title input 没有可见 label，使用 placeholder `标题`。
 - 空 title 或仅包含空白字符的 title 必须 validation 失败。
 - 描述为非必填；提交时 trim，空白描述按未填写处理。
 - 优先级为非必填，取值 `低/中/高`（对应 `LOW/MEDIUM/HIGH`），可以不选或清空。
+- 负责人为非必填自由文本；提交时 trim，空白按未填写处理，后端存为 `NULL`。
 - 创建的 todos 通过 `POST /api/todos` 发送给 backend；backend 将新 todos 分配
   到 `TODO`。
 - 编辑保存通过 `PUT /api/todos/{id}` 提交；删除通过 `DELETE /api/todos/{id}`
   提交。
 - 卡片 hover 时显示编辑（铅笔）和删除图标；编辑在 Modal 中完成，删除前弹出
   Popconfirm 二次确认。
-- Cards 展示 title；当 todo 填写了优先级或描述时，以普通文本样式补充展示，不引入
-  颜色标签。
+- Cards 展示 title；当 todo 填写了优先级、描述或负责人时，以 tertiary 文本
+  样式补充展示，空值不渲染，不引入颜色标签或头像。
 - 长描述在卡片内截断展示，并可查看完整内容。
 - Board columns 在 viewport 内固定高度；长 columns 应在 column body 内滚动，
   不能造成 page-level scrolling。

@@ -176,6 +176,7 @@ test('create command respects custom --api-url and uppercases priority', async (
         status: 'TODO',
         priority: 'MEDIUM',
         description: null,
+        assignee: null,
         createdAt: '2026-08-29T12:00:00Z',
         updatedAt: '2026-08-29T12:00:00Z',
       }),
@@ -193,4 +194,121 @@ test('create command respects custom --api-url and uppercases priority', async (
   assert.equal(payload.priority, 'MEDIUM')
   assert.equal('description' in payload, false)
   assert.equal(process.exitCode, 0)
+})
+
+// ===== assignee 新增用例（TDD RED-GREEN）=====
+// 预期 RED：未实现前，Todo 接口/ create.ts 不支持 assignee，导致 TS 编译失败或断言不匹配。
+
+test('assignee: create with -a flag includes assignee in POST body', async () => {
+  process.exitCode = 0
+  let capturedBody = ''
+  let capturedAssignee: unknown = undefined
+  const fetchImpl: FetchLike = async (_input, init) => {
+    capturedBody = init?.body ?? ''
+    const parsed = JSON.parse(capturedBody)
+    capturedAssignee = parsed.assignee
+    return {
+      ok: true,
+      status: 201,
+      json: async () => ({
+        id: 1,
+        title: '任务X',
+        status: 'TODO',
+        priority: null,
+        description: null,
+        assignee: '张三',
+        createdAt: '2026-08-30T00:00:00Z',
+        updatedAt: '2026-08-30T00:00:00Z',
+      }),
+    }
+  }
+  const program = makeProgramWithFetch(fetchImpl)
+  const out: string[] = []
+  const err: string[] = []
+  program.configureOutput({ writeOut: s => out.push(s), writeErr: s => err.push(s) })
+
+  await runCli(program, ['node', 'todos-cli', 'create', '任务X', '-a', '张三'], m => err.push(m))
+  assert.equal(capturedAssignee, '张三', 'POST body 必须携带 assignee 键值')
+  assert.match(out.join(''), /Assignee:\s+张三/)
+  assert.equal(process.exitCode, 0)
+})
+
+test('assignee: create without -a omits assignee key in body', async () => {
+  process.exitCode = 0
+  let capturedBody = ''
+  const fetchImpl: FetchLike = async (_input, init) => {
+    capturedBody = init?.body ?? ''
+    return {
+      ok: true,
+      status: 201,
+      json: async () => ({
+        id: 2,
+        title: 'Minimal',
+        status: 'TODO',
+        priority: null,
+        description: null,
+        assignee: null,
+        createdAt: '2026-08-30T00:00:00Z',
+        updatedAt: '2026-08-30T00:00:00Z',
+      }),
+    }
+  }
+  const program = makeProgramWithFetch(fetchImpl)
+  const out: string[] = []
+  const err: string[] = []
+  program.configureOutput({ writeOut: s => out.push(s), writeErr: s => err.push(s) })
+
+  await runCli(program, ['node', 'todos-cli', 'create', 'Minimal'], m => err.push(m))
+  const payload = JSON.parse(capturedBody)
+  assert.equal('assignee' in payload, false, '未提供 -a 时 POST body 中 assignee 键必须省略')
+  assert.match(out.join(''), /Assignee:\s+-/)
+  assert.equal(process.exitCode, 0)
+})
+
+test('assignee: apiClient.createTodo returned Todo carries assignee string', async () => {
+  process.exitCode = 0
+  let capturedAssignee: unknown = undefined
+  const fetchImpl: FetchLike = async (_input, init) => {
+    const parsed: Record<string, unknown> = JSON.parse((init?.body as string) ?? '{}')
+    capturedAssignee = parsed.assignee
+    return {
+      ok: true,
+      status: 201,
+      json: async () => ({
+        id: 3,
+        title: typeof parsed.title === 'string' ? parsed.title : 'fallback',
+        status: 'TODO',
+        priority: null,
+        description: null,
+        assignee: '李四',
+        createdAt: '2026-08-30T00:00:00Z',
+        updatedAt: '2026-08-30T00:00:00Z',
+      }),
+    }
+  }
+  const { createTodo } = await import('../services/apiClient.js')
+  const t = await createTodo({
+    apiUrl: 'http://localhost:9',
+    title: 'api-client-test',
+    assignee: '李四',
+    fetchImpl,
+  })
+  assert.equal(t.assignee, '李四')
+  assert.equal(capturedAssignee, '李四')
+})
+
+test('assignee: apiClient.fetchTodosByTitle returns each todo.assignee correctly', async () => {
+  process.exitCode = 0
+  const fetchImpl: FetchLike = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => [
+      { id: 10, title: 'A', status: 'TODO', priority: null, description: null, assignee: '王五', createdAt: '', updatedAt: '' },
+      { id: 11, title: 'B', status: 'TODO', priority: null, description: null, assignee: null, createdAt: '', updatedAt: '' },
+    ],
+  })
+  const { fetchTodosByTitle } = await import('../services/apiClient.js')
+  const list = await fetchTodosByTitle({ apiUrl: 'http://localhost:9', title: 'any', fetchImpl })
+  assert.equal(list[0].assignee, '王五')
+  assert.equal(list[1].assignee, null)
 })

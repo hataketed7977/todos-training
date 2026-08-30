@@ -80,19 +80,21 @@ export function registerSearchCommand(program: Command, options: RegisterSearchO
           id: String(t.id),
           status: t.status,
           priority: t.priority ?? '-',
+          assignee: t.assignee ?? '-',
           title: t.title,
         }))
         const idW = Math.max('ID'.length, ...rows.map(r => r.id.length))
         const stW = Math.max('STATUS'.length, ...rows.map(r => r.status.length))
         const prW = Math.max('PRIORITY'.length, ...rows.map(r => r.priority.length))
+        const asW = Math.max('ASSIGNEE'.length, ...rows.map(r => r.assignee.length))
         const tiW = Math.max('TITLE'.length, ...rows.map(r => r.title.length))
 
         writeOut(`Found ${todos.length} todo(s)\n`)
         writeOut('\n')
-        writeOut(`${'ID'.padEnd(idW)} ${'STATUS'.padEnd(stW)} ${'PRIORITY'.padEnd(prW)} ${'TITLE'.padEnd(tiW)}\n`)
-        writeOut(`${''.padEnd(idW, '-')} ${''.padEnd(stW, '-')} ${''.padEnd(prW, '-')} ${''.padEnd(tiW, '-')}\n`)
+        writeOut(`${'ID'.padEnd(idW)} ${'STATUS'.padEnd(stW)} ${'PRIORITY'.padEnd(prW)} ${'ASSIGNEE'.padEnd(asW)} ${'TITLE'.padEnd(tiW)}\n`)
+        writeOut(`${''.padEnd(idW, '-')} ${''.padEnd(stW, '-')} ${''.padEnd(prW, '-')} ${''.padEnd(asW, '-')} ${''.padEnd(tiW, '-')}\n`)
         for (const r of rows) {
-          writeOut(`${r.id.padEnd(idW)} ${r.status.padEnd(stW)} ${r.priority.padEnd(prW)} ${r.title.padEnd(tiW)}\n`)
+          writeOut(`${r.id.padEnd(idW)} ${r.status.padEnd(stW)} ${r.priority.padEnd(prW)} ${r.assignee.padEnd(asW)} ${r.title.padEnd(tiW)}\n`)
         }
       } catch (err: unknown) {
         if (isCodedError(err)) {

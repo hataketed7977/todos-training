@@ -12,6 +12,8 @@ export const zhCN = {
   priorityLow: '低',
   priorityMedium: '中',
   priorityHigh: '高',
+  todoAssignee: '负责人',
+  assigneePlaceholder: '负责人（选填）',
   add: '添加',
   cancel: '取消',
   totalTasks: '全部任务',

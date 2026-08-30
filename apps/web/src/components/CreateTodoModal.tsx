@@ -9,6 +9,7 @@ interface CreateTodoFormValues {
   title?: string
   description?: string
   priority?: TodoPriority
+  assignee?: string
 }
 
 interface CreateTodoModalProps {
@@ -22,11 +23,13 @@ interface CreateTodoModalProps {
     title: string
     description?: string | null
     priority?: TodoPriority | null
+    assignee?: string | null
   }) => Promise<void>
   onUpdate?: (id: number, input: {
     title: string
     description?: string | null
     priority?: TodoPriority | null
+    assignee?: string | null
   }) => Promise<void>
 }
 
@@ -60,6 +63,7 @@ export function CreateTodoModal({
         title: initialTodo.title,
         description: initialTodo.description ?? undefined,
         priority: initialTodo.priority ?? undefined,
+        assignee: initialTodo.assignee ?? undefined,
       })
     }
   }, [mode, visible, initialTodo])
@@ -72,6 +76,8 @@ export function CreateTodoModal({
 
     const trimmedDescription = values.description?.trim()
     const description = trimmedDescription ? trimmedDescription : null
+    const trimmedAssignee = values.assignee?.trim()
+    const assignee = trimmedAssignee ? trimmedAssignee : null
 
     try {
       if (mode === 'edit' && initialTodo && onUpdate) {
@@ -79,6 +85,7 @@ export function CreateTodoModal({
           title: trimmedTitle,
           description,
           priority: values.priority ?? null,
+          assignee,
         })
         formApiRef.current?.reset()
       } else if (mode === 'create' && onCreate) {
@@ -86,6 +93,7 @@ export function CreateTodoModal({
           title: trimmedTitle,
           description,
           priority: values.priority ?? null,
+          assignee,
         })
         formApiRef.current?.reset()
       }
@@ -149,6 +157,14 @@ export function CreateTodoModal({
           optionList={priorityOptions}
           showClear
           style={{ width: '100%', marginTop: 12 }}
+        />
+        <Form.Input
+          aria-label={i18n.todoAssignee}
+          field="assignee"
+          noLabel
+          placeholder={i18n.assigneePlaceholder}
+          showClear
+          style={{ marginTop: 12 }}
         />
       </Form>
     </Modal>

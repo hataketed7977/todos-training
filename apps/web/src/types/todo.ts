@@ -7,6 +7,7 @@ export interface Todo {
   status: TodoStatus
   description: string | null
   priority: TodoPriority | null
+  assignee: string | null
   createdAt: string
   updatedAt: string
 }

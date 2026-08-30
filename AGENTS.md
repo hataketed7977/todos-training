@@ -166,11 +166,12 @@ files 写到 `/tmp/todos-training/`；foreground 模式 Ctrl+C 只停止该 scri
 当前 user-visible scope：
 
 - List todos。
-- 按 title 创建 todo，并可选择性填写描述和优先级。
-- 编辑已有 todo 的标题、描述和优先级。
+- 按 title 创建 todo，并可选择性填写描述、优先级和负责人。
+- 编辑已有 todo 的标题、描述、优先级和负责人。
 - 删除 todo（删除前二次确认）。
 - 通过拖拽卡片到另一列，修改 todo 的 status。
-- 在三个固定 status columns 中展示 todos。
+- 在三个固定 status columns 中展示 todos，卡片上按 tertiary 文本展示优先级与负责人（空值不渲染）。
+- CLI `todos-cli create` 支持 `-a, --assignee <name>` 选项指定负责人；`todos-cli search` 输出表格新增 `ASSIGNEE` 列（空值显示 `-`）。
 - 显示 total 和 per-status counts。
 
 保持 UI 诚实。可见控件和文案应对应当前真实能力。
@@ -184,6 +185,7 @@ Todo fields：
 - `description`: optional free-text string，最大 2000 字符，可为空。
 - `status`: fixed workflow status。
 - `priority`: optional fixed priority，取值 `LOW` / `MEDIUM` / `HIGH`，可为空。
+- `assignee`: optional free-text string，最大 255 字符，可为空。
 - `createdAt`: creation timestamp。
 - `updatedAt`: last update timestamp。
 
@@ -201,18 +203,20 @@ Todo priority 是固定的：
 
 当前 creation rule：
 
-- Client 发送必填的 `title`，并可选择性发送 `description` 和 `priority`。
+- Client 发送必填的 `title`，并可选择性发送 `description`、`priority` 和 `assignee`。
 - Backend trim title。
 - Backend trim description；空白或未提供的 description 存为 `NULL`。
+- Backend trim assignee；空白或未提供的 assignee 存为 `NULL`。
 - Backend 不提供 `priority` 默认值；未提供时存为 `NULL`。
 - Backend 创建 status 为 `TODO` 的 todo。
-- `priority` 不影响列表排序，列表仍按 `createdAt` 倒序返回。
+- `priority` 与 `assignee` 均不影响列表排序，列表仍按 `createdAt` 倒序返回。
 
 当前 update rule：
 
-- Client 发送必填的 `title`，并可选择性发送 `description`、`priority` 和 `status`。
+- Client 发送必填的 `title`，并可选择性发送 `description`、`priority`、`status` 和 `assignee`。
 - Backend trim title；空白 title 校验失败。
 - Backend trim description；空白或未提供的 description 存为 `NULL`。
+- Backend trim assignee；未提供、传 `null` 或空白字符串的 assignee 一律清空为 `NULL`（与 priority 同派，**不保留**原值）。
 - 未提供 `priority` 时存为 `NULL`（即清空已有优先级）。
 - 未提供 `status` 或 `status` 为 `NULL` 时，**保持**现有 status 不变（向后兼容）。
 - 提供合法 `status`（`TODO` / `DOING` / `DONE`）时，更新 todo 的 status。
@@ -249,8 +253,9 @@ DELETE /api/todos/{id}
 - `GET /api/todos` 返回 todo 列表，按 `createdAt` 倒序。
 - `POST /api/todos` 创建 todo，返回 201 和创建后的 todo。
 - `PUT /api/todos/{id}` 更新 todo 的 `title`、`description`、
-  `priority`、`status`，返回 200 和更新后的 todo；`id` 不存在时返回 404。
-  `status` 字段可选，省略或传 `null` 时保留现有 status。
+  `priority`、`assignee`、`status`，返回 200 和更新后的 todo；`id` 不
+  存在时返回 404。`status` 字段可选，省略或传 `null` 时保留现有 status。
+  `assignee` 字段可选：省略、传 `null` 或空白字符串时清空为 `NULL`。
 - `DELETE /api/todos/{id}` 删除 todo，返回 204 且无响应体；`id` 不存在时
   返回 404。
 
@@ -260,7 +265,8 @@ Create / Update request：
 {
   "title": "Prepare training",
   "description": "准备培训材料和场地",
-  "priority": "HIGH"
+  "priority": "HIGH",
+  "assignee": "张三"
 }
 ```
 
@@ -271,17 +277,20 @@ Update request 可额外携带可选的 `status` 字段：
   "title": "Prepare training",
   "description": "准备培训材料和场地",
   "priority": "HIGH",
+  "assignee": "张三",
   "status": "DOING"
 }
 ```
 
-`description` 和 `priority` 均为可选字段；`description` 最大 2000 字符，
-`priority` 取值为 `LOW`、`MEDIUM`、`HIGH`。`status` 仅对 Update 有效，
-取值为 `TODO`、`DOING`、`DONE`，省略或传 `null` 时保留现有 status（Create
-始终将 status 置为 `TODO`，不受请求体影响）。空白 `title` 由 Bean Validation
-（`@NotBlank`）在 DTO 层拒绝；非法 `priority` / `status` 因枚举反序列化失败
-被拒绝；两者均返回 400。2000 字符长度限制当前由数据库列长度和前端输入框
-maxCount 保证，API DTO 层不校验长度。
+`description`、`priority`、`assignee` 均为可选字段；`description` 最大
+2000 字符；`assignee` 最大 255 字符；`priority` 取值为 `LOW`、`MEDIUM`、
+`HIGH`。`status` 仅对 Update 有效，取值为 `TODO`、`DOING`、`DONE`，省略或
+传 `null` 时保留现有 status（Create 始终将 status 置为 `TODO`，不受请求体
+影响）。空白 `title` 由 Bean Validation（`@NotBlank`）在 DTO 层拒绝；非法
+`priority` / `status` 因枚举反序列化失败被拒绝；`assignee` 因接收 JSON 对
+象/数组等非字符串类型时被 Jackson 反序列化失败拒绝；以上非法情况均返回
+400。2000/255 字符长度限制当前由数据库 CHECK 约束和前端输入框 maxCount 保
+证，API DTO 层不校验长度。
 
 Todo response（`GET` 列表元素、`POST`、`PUT` 均返回该形状）：
 
@@ -292,13 +301,14 @@ Todo response（`GET` 列表元素、`POST`、`PUT` 均返回该形状）：
   "description": "准备培训材料和场地",
   "status": "TODO",
   "priority": "HIGH",
+  "assignee": "张三",
   "createdAt": "2026-08-26T07:00:00Z",
   "updatedAt": "2026-08-26T07:00:00Z"
 }
 ```
 
-未设置的 `description` 和 `priority` 在响应中为 `null`。`DELETE` 成功返回
-204，无响应体。
+未设置的 `description`、`priority`、`assignee` 在响应中为 `null`。`DELETE`
+成功返回 204，无响应体。
 
 ## 验证矩阵
 

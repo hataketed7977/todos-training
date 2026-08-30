@@ -2,8 +2,10 @@ package com.bytedance.todos.controller;
 
 import com.bytedance.todos.repository.TodoRepository;
 import com.bytedance.todos.model.TodoEntity;
+import com.bytedance.todos.model.TodoPriority;
 import com.bytedance.todos.model.TodoStatus;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -316,6 +318,139 @@ class TodoControllerTest {
 		mockMvc.perform(get("/api/todos"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$", hasSize(3)));
+	}
+
+	// ===== 新增 assignee 字段的 RED-GREEN 集成测试用例 =====
+	// 预期失败状态（RED evidence，未实现前的典型失败断言记录位置）：
+	//   a) SQLSyntaxErrorException: Column "ASSIGNEE" not found; 或
+	//   b) JSON path $.assignee expected not null but was null; 或
+	//   c) TodoEntity 没有 assignee 字段导致反序列化/序列化没有该键。
+
+	@Test
+	void createsTodoWithAssigneeAndTrims() throws Exception {
+		mockMvc.perform(post("/api/todos")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "任务1",
+								  "assignee": "  张三  "
+								}
+								"""))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.title").value("任务1"))
+				.andExpect(jsonPath("$.assignee").value("张三"));
+	}
+
+	@Test
+	void createsTodoWithNullAssigneeWhenOmitted() throws Exception {
+		mockMvc.perform(post("/api/todos")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "任务2"
+								}
+								"""))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.assignee").value(nullValue()));
+	}
+
+	@Test
+	void createsTodoWithNullAssigneeWhenBlank() throws Exception {
+		mockMvc.perform(post("/api/todos")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "任务3",
+								  "assignee": "   "
+								}
+								"""))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.assignee").value(nullValue()));
+	}
+
+	@Test
+	void createRejectsAssigneeInvalidJsonType() throws Exception {
+		long beforeCount = todoRepository.count();
+		mockMvc.perform(post("/api/todos")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "任务4",
+								  "assignee": { "name": "张三" }
+								}
+								"""))
+				.andExpect(status().is4xxClientError());
+		// 确保没有持久化任何数据
+		mockMvc.perform(get("/api/todos"))
+				.andExpect(jsonPath("$.length()", is((int) beforeCount)));
+	}
+
+	@Test
+	void updatesTodoWritesAssignee() throws Exception {
+		TodoEntity todo = todoRepository.save(new TodoEntity("标题", null, TodoPriority.LOW, "李四"));
+		mockMvc.perform(put("/api/todos/" + todo.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "标题",
+								  "assignee": "王五"
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.assignee").value("王五"));
+	}
+
+	@Test
+	void updatesTodoClearsAssigneeWhenOmitted() throws Exception {
+		TodoEntity todo = todoRepository.save(new TodoEntity("标题", null, TodoPriority.LOW, "李四"));
+		mockMvc.perform(put("/api/todos/" + todo.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "标题"
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.assignee").value(nullValue()));
+	}
+
+	@Test
+	void updatesTodoClearsAssigneeWhenBlank() throws Exception {
+		TodoEntity todo = todoRepository.save(new TodoEntity("标题", null, TodoPriority.LOW, "李四"));
+		mockMvc.perform(put("/api/todos/" + todo.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "标题",
+								  "assignee": "   "
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.assignee").value(nullValue()));
+	}
+
+	@Test
+	void assigneeDoesNotAffectListOrderingCreatedAtDesc() throws Exception {
+		TodoEntity earlier = new TodoEntity("早创建", null, TodoPriority.LOW, "A");
+		TodoEntity later = new TodoEntity("晚创建", null, TodoPriority.LOW, "B");
+		// 显式控制 createdAt，使用 repo 保存后利用 save 顺序可能仍有冲突，
+		// 改为直接通过 repository 手动 set，然后再 save 两条，确保顺序。
+		earlier = todoRepository.save(earlier);
+		// 等待至少 1 ms，防止 in-memory clock 重合。
+		try {
+			Thread.sleep(2);
+		} catch (InterruptedException ignore) {
+			Thread.currentThread().interrupt();
+		}
+		later = todoRepository.save(later);
+
+		mockMvc.perform(get("/api/todos"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(2)))
+				.andExpect(jsonPath("$[0].id").value(later.getId().intValue()))
+				.andExpect(jsonPath("$[0].assignee").value("B"))
+				.andExpect(jsonPath("$[1].id").value(earlier.getId().intValue()))
+				.andExpect(jsonPath("$[1].assignee").value("A"));
 	}
 
 }
