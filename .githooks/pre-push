@@ -38,10 +38,31 @@ else
 
     # 确定 diff 范围
     if [[ "$REMOTE_SHA" == "$ZERO_SHA" ]]; then
-      # 新建分支，尝试找 origin/main 作为基线
-      BASE_SHA=$(git merge-base "$LOCAL_SHA" origin/main 2>/dev/null || echo "")
+      # 新建分支推送（远端还没有该 ref）：
+      # 不硬套 origin/main，遍历本地所有已设置 upstream 的分支，
+      # 选择「与 LOCAL_SHA 的 merge-base 距离最近（RANGE 内 commit 数最少）」
+      # 的 upstream 作为基线；找不到再回退 origin/main。
+      BEST_BASE=""
+      BEST_COUNT=-1
+      CANDIDATE_BRANCHES=$(git for-each-ref --format='%(refname:short)' refs/heads/ 2>/dev/null || echo "")
+      while IFS= read -r BR; do
+        [[ -z "${BR:-}" ]] && continue
+        UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name "${BR}@{u}" 2>/dev/null || echo "")
+        [[ -z "$UPSTREAM" ]] && continue
+        MB=$(git merge-base "$LOCAL_SHA" "$UPSTREAM" 2>/dev/null || echo "")
+        [[ -z "$MB" ]] && continue
+        CNT=$(git rev-list --count "${MB}..${LOCAL_SHA}" 2>/dev/null || echo "-1")
+        [[ "$CNT" == "-1" ]] && continue
+        if [[ $BEST_COUNT -eq -1 ]] || [[ $CNT -lt $BEST_COUNT ]]; then
+          BEST_COUNT=$CNT
+          BEST_BASE="$MB"
+        fi
+      done <<< "$CANDIDATE_BRANCHES"
+      BASE_SHA="$BEST_BASE"
       if [[ -z "$BASE_SHA" ]]; then
-        # 回退：使用 HEAD~1 估算
+        BASE_SHA=$(git merge-base "$LOCAL_SHA" origin/main 2>/dev/null || echo "")
+      fi
+      if [[ -z "$BASE_SHA" ]]; then
         BASE_SHA=$(git rev-parse "$LOCAL_SHA~1" 2>/dev/null || echo "")
       fi
       RANGE="${BASE_SHA:+$BASE_SHA..}$LOCAL_SHA"
@@ -107,7 +128,18 @@ if [[ $MODULE_COUNT -eq 0 ]]; then
 fi
 
 echo "🧪 检测到 $MODULE_COUNT 个受影响的业务模块，开始运行 focused checks..."
-echo ""
+
+# 心理预期提示：避免用户把长时间的模块测试误解为"卡住"
+HINT_LINES=0
+if [[ $NEED_API -eq 1 ]]; then
+  echo "ℹ️  包含 api 模块：Gradle test --rerun-tasks 在首次/冷缓存下通常需要 1~3 分钟，属正常情况，请耐心等待…"
+  HINT_LINES=$((HINT_LINES + 1))
+fi
+if [[ $MODULE_COUNT -ge 2 ]]; then
+  echo "ℹ️  将依次运行 $MODULE_COUNT 个模块的 focused checks（按 web → cli → api 顺序），互不干扰。"
+  HINT_LINES=$((HINT_LINES + 1))
+fi
+[[ $HINT_LINES -gt 0 ]] && echo ""
 
 # ──────────────────────────────────────────────────────────────
 # 3. 执行各模块测试命令，失败时说清原因
